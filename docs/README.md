@@ -38,15 +38,27 @@ The documentation follows the complete project lifecycle, from business discover
 
 ## Phase 2 — Data Discovery & Profiling
 
-The initial **Business Discovery** and **Data Source Assessment** stages have been completed.
+Business Discovery and the initial Data Source Assessment are complete. The project is validating real source files against the approved business questions and KPI catalog before committing to physical data models or Databricks pipelines.
 
-The project is now transitioning from requirements and source research into the inspection and validation of actual datasets.
+**Current activity:** source-level profiling, source-format reconciliation, data-quality assessment, and documentation of unresolved issues.
 
-### Current Activity
+## Current Data Discovery & Profiling Progress
 
-**Data Profiling**
+| Dataset / Source | Status | Evidence and next validation |
+|---|---|---|
+| BCRD — USD/DOP Exchange Rates | Initial profiling completed | Historical Excel reviewed; official incremental extraction remains unconfirmed |
+| BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Initial profiling completed; detailed validation pending | Six additional official spreadsheets obtained; monthly grain, base periods, methodology and wide-format normalization require documented checks |
+| MICM — Fuel Prices | Profiling documented; reconciliation in progress | Official CSV and XLSX obtained; format differences, repeated periods and zero prices require resolution |
+| Pro Consumidor — Consumer Prices | Not started | Next source-discovery priority |
+| Ministry of Agriculture — Agricultural Prices | Not started | Source-format and historical coverage assessment pending |
+| EIA — WTI / Brent | Not started | External driver only under RD-First governance |
 
-The objective of this phase is to understand the real structure, quality, granularity, historical coverage, and technical characteristics of each dataset before designing the physical Lakehouse implementation.
+**Current phase:** Data Discovery & Profiling  
+**Next milestone:** Complete MICM reconciliation, assess Pro Consumidor and Agriculture datasets, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target Mapping`.
+
+**Technical documentation:** [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
+
+The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
 ---
 
@@ -207,7 +219,7 @@ They must never be interpreted or presented as Dominican price data.
 
 # Core Data Sources
 
-The current source assessment identified the following primary sources.
+The current source assessment identified the following primary sources. BCRD family-basket datasets are also being evaluated as a cost-of-living extension; any resulting new KPI IDs require formal catalog review.
 
 | Institution | Domain | Geographic Scope | Project Role |
 |---|---|---|---|
@@ -361,19 +373,19 @@ Category mapping
 
 # Data Profiling Order
 
-The initial profiling sequence is:
+The source-discovery sequence follows business priority and source readiness:
 
 ```text
-01. BCRD — USD/DOP Exchange Rate
-02. BCRD — Consumer Price Index
-03. BCRD — Monetary Policy Rate
-04. MICM — Dominican Fuel Prices
-05. Pro Consumidor — Consumer / Basic Basket Prices
-06. Ministry of Agriculture — Agricultural Prices
-07. WTI / Brent — External Oil Driver
+01. BCRD — USD/DOP Exchange Rates [initial profiling completed]
+02. BCRD — CPI and Family Basket datasets [initial profiling completed]
+03. BCRD — Monetary Policy Rate [pending source-file profiling]
+04. MICM — Dominican Fuel Prices [reconciliation in progress]
+05. Pro Consumidor — Consumer / Basic Basket Prices [next]
+06. Ministry of Agriculture — Agricultural Prices [pending]
+07. EIA — WTI / Brent external oil driver [pending]
 ```
 
-The **USD/DOP Exchange Rate** will be used as the first profiling exercise because it provides a relatively manageable dataset for establishing the project's profiling methodology.
+BCRD source files already acquired for initial profiling comprise USD/DOP, national CPI, CPI by expenditure group, core CPI, regional CPI, family basket by quintile/national, and family basket by region. File acquisition and initial inspection do not imply that all detailed data-quality checks or incremental ingestion designs have been approved.
 
 ---
 
@@ -602,38 +614,21 @@ Analytics
 
 # Next Milestone
 
-## Data Profiling — BCRD USD/DOP
+## Complete Source Discovery and Profiling Evidence
 
-The next project milestone is the first real dataset profiling exercise.
+The immediate priorities are:
 
-The USD/DOP dataset will be analyzed for:
+1. Resolve or explicitly document the MICM CSV/XLSX value discrepancies, repeated reporting periods, units and zero-value semantics. Do not assume one format is authoritative without verification.
+2. Assess official Pro Consumidor consumer-price datasets and their coverage, grain, format and reuse constraints.
+3. Assess Ministry of Agriculture agricultural-price datasets.
+4. Profile the BCRD monetary policy rate source and verify incremental extraction options for BCRD data.
+5. Consolidate source schemas, candidate business keys, quality rules, methodology notes, and KPI traceability as inputs to `05_Data_Dictionary`.
 
-```text
-Schema
-Data types
-Historical coverage
-Frequency
-Null values
-Duplicates
-Candidate business keys
-Buy / Sell rate structure
-Date consistency
-Numerical ranges
-Potential anomalies
-Incremental ingestion feasibility
-```
+The MICM dataset is **not production approved**. The existence of source files or preliminary profiling is not evidence that all source values are reconciled.
 
-The findings from this exercise will begin feeding:
+**GitHub policy:** commit source profiling notes, mappings, tests and code; preserve original source files outside the public repository until the data publication and repository policy is reviewed.
 
-```text
-05_Data_Dictionary
-```
-
-and later:
-
-```text
-06_Source_to_Target_Mapping
-```
+**Implementation gate:** do not create Databricks catalogs, tables, notebooks or workflows until source profiling, data dictionary, source-to-target mapping and solution architecture have been reviewed.
 
 ---
 
@@ -642,7 +637,7 @@ and later:
 ```text
 Business Discovery       ██████████  COMPLETE
 Source Assessment        ██████████  COMPLETE
-Data Profiling           ██░░░░░░░░  CURRENT
+Data Profiling           ████░░░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
 Databricks Engineering   ░░░░░░░░░░  PLANNED
 Analytics & BI           ░░░░░░░░░░  PLANNED
