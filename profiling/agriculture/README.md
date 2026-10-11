@@ -112,3 +112,34 @@ No Databricks objects or pipelines have been created as part of this profiling.
 - [Pro Consumidor profiling](../proconsumidor/README.md)
 
 **Status:** Source files received; preliminary CSV profiling documented; Excel reconciliation and formal KPI validation pending.
+
+## 10. Agricultural KPI feasibility assessment (catalog-aligned)
+
+**Assessment basis:** `03_Business_Questions_KPI_Catalog.xlsx`, `KPI_Catalog` worksheet, IDs AGR-001 through AGR-007; preliminary CSV profiling described above. This is a source feasibility assessment, **not** KPI production validation. The catalog's geographic dimensions (market, municipality, province, region) are desired analytical dimensions, not evidence that each is present in these files.
+
+| KPI ID | Catalog KPI name | Catalog calculation / method | Preliminary feasibility | Critical gate |
+|---|---|---|---|---|
+| AGR-001 | Average Agricultural Price | `AVG(price)` | Conditional | Parse valid numeric prices; distinguish zero/missing; group by equivalent product, unit, period, and outlet/market |
+| AGR-002 | MoM Price Change % | `(Price_t / Price_prev_month - 1) * 100` | Conditional | Define monthly aggregation from week labels; ensure consistent product, unit, channel, and available comparable months |
+| AGR-003 | YoY Price Change % | `(Price_t / Price_t-1year - 1) * 100` | Conditional | Verify actual year coverage and equivalent observations 12 months apart; handle missing periods |
+| AGR-004 | YTD Price Change % | `(Price_t / Price_last_prev_year - 1) * 100` | Conditional | Define and validate year-end reference observation and product/unit/channel comparability |
+| AGR-005 | Price Volatility | `STDDEV(periodic returns) over defined window` | Conditional | Agree on return frequency, window, minimum observations, and missing/zero handling |
+| AGR-006 | Seasonal Price Index | Methodology to be defined after history assessment | Not yet specified | Validate multi-year continuity, seasonality method, and sample sufficiency; no index should be invented |
+| AGR-007 | Regional Price Difference % | `(Regional Price / Reference Price - 1) * 100` | Not validated for regions | Retail has named markets/outlets but no confirmed municipality/province/region mapping; wholesale lacks explicit geographic fields. A market-level comparison is not a regional comparison |
+
+### Cross-format validation status
+
+- **Wholesale XLSX structural check:** The supplied XLSX contains one worksheet XML with 44,533 row elements. This is a structural count only and does not prove one-to-one equivalence with the 44,533 physical CSV records, nor validate cell contents, headers, or malformed records.
+- **Retail XLS comparison:** Pending. The supplied `.xls` file has not been reconciled against the retail CSV.
+- **Wholesale cell-level comparison:** Pending. Do not infer that identical row counts establish identical values.
+
+### KPI governance decisions required
+
+1. Establish the exact observation key and the official meaning of duplicated wholesale rows.
+2. Confirm whether zero represents a valid price or an unavailable quotation.
+3. Approve a product and unit dictionary, including which quantities can be converted without assumptions.
+4. Define the monthly observation/aggregation convention and reference periods for YoY/YTD.
+5. Verify location mappings from official source metadata before claiming province or region-level coverage.
+6. Specify seasonal index methodology and volatility observation window before calculating AGR-005 or AGR-006.
+
+**Current status:** All seven agricultural KPIs have been mapped to the business catalog. No agricultural KPI is marked production-ready. Cross-format and business-grain validation remain open.
