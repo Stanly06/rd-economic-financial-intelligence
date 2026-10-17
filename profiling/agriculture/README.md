@@ -1,4 +1,4 @@
-# Ministry of Agriculture — Agricultural Prices Data Discovery & Preliminary Profiling
+# Ministry of Agriculture — Agricultural Prices Data Discovery &  Profiling
 
 **Project:** RD Economic & Financial Intelligence Platform  
 **Domain:** Agricultural Prices  
