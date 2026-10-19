@@ -19,7 +19,7 @@ The documentation follows the complete project lifecycle, from business discover
 | 07 | Solution Architecture | Planned |
 | 08 | Logical & Physical Data Model | Planned |
 | 09 | Data Quality Rules & Data Contracts | Planned |
-| 10 | Databricks Environment Setup | Planned |
+| 10 | Databricks Environment Setup | In Progress — Initial infrastructure validated |
 | 11 | Bronze Layer | Planned |
 | 12 | Silver Layer | Planned |
 | 13 | Gold Layer | Planned |
@@ -49,14 +49,33 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 | BCRD — USD/DOP Exchange Rates | Initial profiling completed | Historical Excel reviewed; official incremental extraction remains unconfirmed |
 | BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Initial profiling completed; detailed validation pending | Six additional official spreadsheets obtained; monthly grain, base periods, methodology and wide-format normalization require documented checks |
 | MICM — Fuel Prices | Profiling documented; reconciliation in progress | Official CSV and XLSX obtained; format differences, repeated periods and zero prices require resolution |
-| Pro Consumidor — Consumer Prices | Not started | Next source-discovery priority |
+| Pro Consumidor — Consumer Prices | Initial profiling completed; validation in progress | CSV/XLSX reviewed; anomalous year values, historical coverage, geographic granularity and KPI feasibility require further validation |
 | Ministry of Agriculture — Agricultural Prices | Not started | Source-format and historical coverage assessment pending |
 | EIA — WTI / Brent | Not started | External driver only under RD-First governance |
 
 **Current phase:** Data Discovery & Profiling  
-**Next milestone:** Complete MICM reconciliation, assess Pro Consumidor and Agriculture datasets, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target Mapping`.
+**Next milestone:** Complete MICM CSV/XLSX reconciliation, validate Pro Consumidor data-quality anomalies and KPI feasibility, assess Ministry of Agriculture datasets, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target_Mapping`.
 
-**Technical documentation:** [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
+**Technical documentation:**
+- [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
+- [Pro Consumidor — Consumer Prices Data Discovery & Profiling](../profiling/proconsumidor/README.md)
+### Databricks Lakehouse Infrastructure Status
+
+**Environment:** Databricks Free Edition  
+**Implementation status:** Initial infrastructure implemented and validated.
+
+The following infrastructure components have been successfully verified:
+
+- Unity Catalog: `rd_economic_intelligence`
+- Schemas: `bronze`, `silver`, `gold`, `metadata`, `quality`
+- Raw Unity Catalog Volumes: `bcrd_raw`, `micm_raw`, `proconsumidor_raw`, `agriculture_raw`
+- Raw landing directories for BCRD exchange rates, CPI, monetary policy, MICM fuel prices, Pro Consumidor consumer prices, and Ministry of Agriculture retail and wholesale prices.
+
+**Validation result:** All infrastructure checks passed.
+
+**GitHub implementation:** [Databricks Setup Notebooks](../src/setup/)
+
+**Important:** Infrastructure validation confirms that the catalog, schemas, volumes, and landing directories exist. It does not confirm that source datasets have been ingested or that Bronze, Silver, and Gold pipelines are operational.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
