@@ -102,6 +102,10 @@ Candidate names such as `bronze.proconsumidor_prices`, `silver.consumer_prices`,
 
 Thresholds, ownership, and severity require approval during the Data Quality Rules & Data Contracts phase.
 
+## 7a. Automatic acquisition
+
+The report is published on datos.gob.do (CKAN dataset `precios_productos_primera_necesidad`, organization Pro Consumidor) in CSV, XLSX, ODS and JSON, served from `proconsumidor.gob.do/files/`. `05_ProConsumidor_Prices_Download` reads the current URLs from the CKAN API; the downloaded XLSX and CSV were byte-identical to the manually landed files.
+
 ## 8. Open questions and next actions
 
 1. Confirm whether the 30 anomalous year values are source-entry or export errors; obtain authoritative corrected records if available.

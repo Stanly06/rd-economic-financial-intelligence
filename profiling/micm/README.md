@@ -66,6 +66,10 @@ Proposed business key: (`period_start_date`, `period_end_date`, `fuel_type`) **a
 6. Reconcile weekly period counts and latest publication date with official MICM updates.
 7. Validate calculated FUEL KPIs only after establishing a trustworthy weekly price series.
 
+## Automatic acquisition
+
+The dataset is published on the national open-data portal (datos.gob.do, CKAN dataset `precios-de-los-combustibles`, organization MICM); the files themselves are served from `micm.gob.do/transparencias/datos-abiertos/precios-de-combustibles/`. The file name carries the year range, so `04_MICM_Fuel_Prices_Download` reads the current URL from the CKAN API on every run. The portal file was newer than the manually landed copy (877 vs 872 weeks).
+
 ## Open decisions and next actions
 
 - Resolve the three December 2023 repeated intervals using source documentation.

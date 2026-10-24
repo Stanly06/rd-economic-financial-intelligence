@@ -1,6 +1,6 @@
 {
   "name": "rd_economic_medallion_pipeline",
-  "description": "RD Economic & Financial Intelligence Platform: five independent Medallion chains run in parallel. BCRD FX (FX-001..009), BCRD CPI (INF-001..006, then COL-001..003), MICM fuel prices (FUEL-001..012), Pro Consumidor basic-goods prices (CON-001..005) and MEM electricity (ENE-001..009). Notebooks run from the Git folder (branch main).",
+  "description": "RD Economic & Financial Intelligence Platform: five independent Medallion chains run in parallel. BCRD FX (FX-001..009), BCRD CPI (INF-001..006, then COL-001..003), MICM fuel prices (FUEL-001..012), Pro Consumidor basic-goods prices (CON-001..005) and MEM electricity (ENE-001..009). MEM, MICM and Pro Consumidor files are downloaded automatically before Bronze; all Bronze tasks ingest incrementally with Auto Loader. Notebooks run from the Git folder (branch main).",
   "tags": {
     "project": "rd-economic-intelligence",
     "source": "bcrd-micm-proconsumidor-mem",
@@ -22,6 +22,28 @@
     "pause_status": "PAUSED"
   },
   "tasks": [
+    {
+      "task_key": "download_proconsumidor_prices",
+      "description": "Download the current Pro Consumidor basic-goods price report from datos.gob.do into the append-only proconsumidor_raw archive (skips content already archived)",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/05_ProConsumidor_Prices_Download",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 2,
+      "min_retry_interval_millis": 120000,
+      "timeout_seconds": 900
+    },
+    {
+      "task_key": "download_micm_fuel_prices",
+      "description": "Download the current MICM fuel-price XLSX and CSV from datos.gob.do into the append-only micm_raw archive (skips content already archived)",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/04_MICM_Fuel_Prices_Download",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 2,
+      "min_retry_interval_millis": 120000,
+      "timeout_seconds": 900
+    },
     {
       "task_key": "bronze_bcrd_exchange_rates",
       "description": "Auto Loader: register new BCRD USD/DOP workbooks and capture each as a snapshot in bronze.bcrd_exchange_rates_daily",
@@ -133,7 +155,12 @@
       },
       "max_retries": 1,
       "min_retry_interval_millis": 60000,
-      "timeout_seconds": 1200
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "download_micm_fuel_prices"
+        }
+      ]
     },
     {
       "task_key": "silver_micm_fuel_prices",
@@ -176,7 +203,12 @@
       },
       "max_retries": 1,
       "min_retry_interval_millis": 60000,
-      "timeout_seconds": 1200
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "download_proconsumidor_prices"
+        }
+      ]
     },
     {
       "task_key": "silver_proconsumidor_prices",
