@@ -598,17 +598,30 @@ This KPI will help identify which categories are experiencing the strongest pric
 
 # 8. Foreign Exchange KPIs
 
-| KPI ID | KPI Name | Unit | Granularity | Priority |
-|---|---|---|---|---|
-| **FX-001** | USD/DOP Buy Rate | DOP/USD | Daily | MVP |
-| **FX-002** | USD/DOP Sell Rate | DOP/USD | Daily | MVP |
-| **FX-003** | Daily FX Change | % | Daily | MVP |
-| **FX-004** | MoM FX Change | % | Monthly | MVP |
-| **FX-005** | YoY FX Change | % | Monthly | MVP |
-| **FX-006** | YTD FX Change | % | Daily / Monthly | MVP |
-| **FX-007** | 30-Day Moving Average | DOP/USD | Daily | MVP |
-| **FX-008** | 52-Week High | DOP/USD | Daily | MVP |
-| **FX-009** | 52-Week Low | DOP/USD | Daily | MVP |
+**Validation status:** Validated (2026-10-23) against the official BCRD daily exchange-rate file (1,253 business-day observations, 2021-09-20 to 2026-09-18). Rates are expressed in DOP per 1 USD.
+
+| KPI ID | KPI Name | Unit | Granularity | Priority | Status |
+|---|---|---|---|---|---|
+| **FX-001** | USD/DOP Buy Rate | DOP/USD | Daily (business days) | MVP | Validated |
+| **FX-002** | USD/DOP Sell Rate | DOP/USD | Daily (business days) | MVP | Validated |
+| **FX-003** | Daily FX Change | % | Daily (business days) | MVP | Validated |
+| **FX-004** | MoM FX Change | % | Monthly | MVP | Validated |
+| **FX-005** | YoY FX Change | % | Monthly | MVP | Validated |
+| **FX-006** | YTD FX Change | % | Daily / Monthly | MVP | Validated |
+| **FX-007** | 30-Day Moving Average | DOP/USD | Daily (business days) | MVP | Validated |
+| **FX-008** | 52-Week High | DOP/USD | Daily (business days) | MVP | Validated |
+| **FX-009** | 52-Week Low | DOP/USD | Daily (business days) | MVP | Validated |
+
+## FX Calculation Decisions
+
+The original catalog left four definitions open. They were resolved before building the Silver layer because each one changes dashboard values.
+
+| ID | Decision | Applies to | Rationale |
+|---|---|---|---|
+| **D1** | Use the **conventional** percentage change `(Rate_t / Rate_ref - 1) × 100` as the primary KPI. Keep the BCRD official appreciation/depreciation values as separate reference columns. | FX-003 to FX-006 | BCRD calculates appreciation/depreciation with the reciprocal (1/rate), so its sign is the opposite of a conventional change. Mixing both would mislead users. Dashboards must state: **"Rate up = peso depreciation."** |
+| **D2** | The monthly reference value is the rate on the **last available business day of the month**. | FX-004, FX-005 | Financial-market standard. A monthly average can be added later for comparisons with monthly CPI. |
+| **D3** | "30-day" means the trailing **30 business-day observations**, current day included (about six calendar weeks). | FX-007 | The source publishes business days only; there are no weekend or holiday rows. |
+| **D4** | Windows without enough history return **NULL** and carry an `is_full_window` flag, instead of showing partial values. | FX-005 to FX-009 | Source history starts on 2021-09-20, so 12-month and 52-week values are not complete until September 2022. |
 
 ---
 
@@ -616,7 +629,7 @@ This KPI will help identify which categories are experiencing the strongest pric
 
 ```text
 Daily FX Change % =
-(Rate_t / Rate_t-1 - 1) × 100
+(Rate_t / Rate_previous_business_day - 1) × 100
 ```
 
 ---
@@ -625,7 +638,9 @@ Daily FX Change % =
 
 ```text
 MoM FX Change % =
-(Rate_t / Rate_Previous_Month - 1) × 100
+(Rate_month_end / Rate_previous_month_end - 1) × 100
+
+Rate_month_end = rate on the last available business day of the month (D2)
 ```
 
 ---
@@ -634,8 +649,10 @@ MoM FX Change % =
 
 ```text
 YoY FX Change % =
-(Rate_t / Rate_t-1year - 1) × 100
+(Rate_month_end / Rate_month_end_12_months_earlier - 1) × 100
 ```
+
+NULL until 12 months of history exist (D4).
 
 ---
 
@@ -643,8 +660,10 @@ YoY FX Change % =
 
 ```text
 YTD FX Change % =
-(Rate_t / Rate_Last_Observation_Previous_Year - 1) × 100
+(Rate_t / Rate_last_business_day_previous_year - 1) × 100
 ```
+
+NULL for 2021, because the source has no prior year-end observation (D4). The BCRD official accumulated appreciation/depreciation (reciprocal method) is kept as a reference column (D1).
 
 ---
 
@@ -652,8 +671,10 @@ YTD FX Change % =
 
 ```text
 MA30 =
-AVG(Exchange Rate over trailing 30-day window)
+AVG(rate) over the trailing 30 business-day observations, current day included
 ```
+
+NULL until 30 observations exist (D3, D4).
 
 ---
 
@@ -661,16 +682,19 @@ AVG(Exchange Rate over trailing 30-day window)
 
 ```text
 52-Week High =
-MAX(Exchange Rate over trailing 52 weeks)
+MAX(rate) over the trailing 52 weeks (364 calendar days), current day included
 
 52-Week Low =
-MIN(Exchange Rate over trailing 52 weeks)
+MIN(rate) over the trailing 52 weeks (364 calendar days), current day included
 ```
 
-Candidate analytical dataset:
+NULL until 52 weeks of history exist (D4).
+
+Analytical dataset:
 
 ```text
-gold.exchange_rate_metrics
+silver.bcrd_exchange_rates_daily   → one row per business day (buy and sell rate)
+gold.exchange_rate_metrics         → Date × Currency × Rate Type (long format for BI)
 ```
 
 ---
