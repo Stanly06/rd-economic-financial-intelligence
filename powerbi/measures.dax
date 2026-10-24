@@ -1,0 +1,160 @@
+// =====================================================================
+// RD Economic & Financial Intelligence Platform — Power BI measures
+// Tables (Import mode, from Databricks SQL):
+//   'FX Daily'    = rd_economic_intelligence.gold.exchange_rate_metrics
+//   'FX Monthly'  = rd_economic_intelligence.gold.exchange_rate_monthly_metrics
+//   'Inflation'   = rd_economic_intelligence.gold.inflation_metrics
+//   'Cost of Living' = rd_economic_intelligence.gold.cost_of_living_metrics
+//   'Calendar'    = DAX calculated table (below)
+// Convention (KPI decision D1): FX rate up = peso depreciation.
+// =====================================================================
+
+
+// ---------- Calendar (Modeling > New table) ----------
+Calendar =
+ADDCOLUMNS (
+    CALENDAR ( DATE ( 1984, 1, 1 ), DATE ( 2026, 12, 31 ) ),
+    "Year", YEAR ( [Date] ),
+    "Month Number", MONTH ( [Date] ),
+    "Month Start", DATE ( YEAR ( [Date] ), MONTH ( [Date] ), 1 ),
+    "Month", FORMAT ( [Date], "MMM yyyy" ),
+    "Weekday", WEEKDAY ( [Date], 2 )
+)
+// Mark as date table on [Date]. Sort "Month" by "Month Start".
+// Relationships (single direction, Calendar -> fact):
+//   Calendar[Date] 1 -> * 'FX Daily'[rate_date]
+//   Calendar[Date] 1 -> * 'FX Monthly'[month_start]
+//   Calendar[Date] 1 -> * 'Inflation'[reference_month]
+//   Calendar[Date] 1 -> * 'Cost of Living'[reference_month]
+
+
+// =====================================================================
+// FX — daily (FX-001, 002, 003, 006, 007, 008, 009)
+// Values are taken on the latest date in the current filter context.
+// =====================================================================
+FX Latest Date =
+CALCULATE ( MAX ( 'FX Daily'[rate_date] ) )
+
+FX Buy Rate =
+VAR d = [FX Latest Date]
+RETURN CALCULATE ( MAX ( 'FX Daily'[rate] ), 'FX Daily'[rate_type] = "buy", 'FX Daily'[rate_date] = d )
+
+FX Sell Rate =
+VAR d = [FX Latest Date]
+RETURN CALCULATE ( MAX ( 'FX Daily'[rate] ), 'FX Daily'[rate_type] = "sell", 'FX Daily'[rate_date] = d )
+
+FX Spread =
+[FX Sell Rate] - [FX Buy Rate]
+
+FX Daily Change % =
+VAR d = [FX Latest Date]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'FX Daily'[daily_change_pct] ), 'FX Daily'[rate_type] = "sell", 'FX Daily'[rate_date] = d ), 100 )
+
+FX YTD Change % =
+VAR d = [FX Latest Date]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'FX Daily'[ytd_change_pct] ), 'FX Daily'[rate_type] = "sell", 'FX Daily'[rate_date] = d ), 100 )
+
+FX MA30 =
+VAR d = [FX Latest Date]
+RETURN CALCULATE ( MAX ( 'FX Daily'[ma30_rate] ), 'FX Daily'[rate_type] = "sell", 'FX Daily'[rate_date] = d )
+
+FX 52W High =
+VAR d = [FX Latest Date]
+RETURN CALCULATE ( MAX ( 'FX Daily'[high_52w_rate] ), 'FX Daily'[rate_type] = "sell", 'FX Daily'[rate_date] = d )
+
+FX 52W Low =
+VAR d = [FX Latest Date]
+RETURN CALCULATE ( MAX ( 'FX Daily'[low_52w_rate] ), 'FX Daily'[rate_type] = "sell", 'FX Daily'[rate_date] = d )
+
+// For line charts over time (respects the rate_type slicer)
+FX Rate =
+AVERAGE ( 'FX Daily'[rate] )
+
+FX Rate MA30 =
+AVERAGE ( 'FX Daily'[ma30_rate] )
+
+FX Peso Direction =
+IF ( [FX YTD Change %] > 0, "Peso depreciating in the year", "Peso appreciating in the year" )
+
+
+// =====================================================================
+// FX — monthly (FX-004, FX-005)
+// =====================================================================
+FX MoM % =
+DIVIDE ( AVERAGE ( 'FX Monthly'[mom_change_pct] ), 100 )
+
+FX YoY % =
+DIVIDE ( AVERAGE ( 'FX Monthly'[yoy_change_pct] ), 100 )
+
+FX Month Is Partial =
+IF ( MAX ( 'FX Monthly'[is_partial_month] ), "Month to date", "Full month" )
+
+
+// =====================================================================
+// Inflation (INF-001 to INF-006)
+// =====================================================================
+CPI Latest Month =
+CALCULATE ( MAX ( 'Inflation'[reference_month] ), 'Inflation'[series_type] = "headline" )
+
+Headline Inflation YoY % =
+VAR m = [CPI Latest Month]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
+
+Headline Inflation YTD % =
+VAR m = [CPI Latest Month]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[ytd_inflation_pct] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
+
+Headline Inflation MoM % =
+VAR m = [CPI Latest Month]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[mom_inflation_pct] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
+
+Core Inflation YoY % =
+VAR m = [CPI Latest Month]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "core", 'Inflation'[reference_month] = m ), 100 )
+
+// For charts over time and by group/region (respects series slicers)
+Inflation YoY % =
+DIVIDE ( AVERAGE ( 'Inflation'[yoy_inflation_pct] ), 100 )
+
+Inflation MoM % =
+DIVIDE ( AVERAGE ( 'Inflation'[mom_inflation_pct] ), 100 )
+
+CPI Index =
+AVERAGE ( 'Inflation'[index_value] )
+
+
+// =====================================================================
+// FX vs inflation (BRD: "How do exchange-rate movements compare with inflation?")
+// Use on a monthly axis: Calendar[Month]
+// =====================================================================
+Headline YoY % (monthly axis) =
+DIVIDE ( CALCULATE ( AVERAGE ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "headline" ), 100 )
+
+FX Sell YoY % (monthly axis) =
+DIVIDE ( CALCULATE ( AVERAGE ( 'FX Monthly'[yoy_change_pct] ), 'FX Monthly'[rate_type] = "sell" ), 100 )
+
+
+// =====================================================================
+// Cost of living (COL-001 to COL-003)
+// =====================================================================
+COL Latest Month =
+CALCULATE ( MAX ( 'Cost of Living'[reference_month] ) )
+
+Basket Cost =
+AVERAGE ( 'Cost of Living'[basket_cost_dop] )
+
+Basket Cost National =
+VAR m = [COL Latest Month]
+RETURN CALCULATE ( MAX ( 'Cost of Living'[basket_cost_dop] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
+
+Basket Cost YoY % =
+VAR m = [COL Latest Month]
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Cost of Living'[yoy_change_pct] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m ), 100 )
+
+Q5 vs Q1 Gap DOP =
+VAR m = [COL Latest Month]
+RETURN CALCULATE ( MAX ( 'Cost of Living'[q5_q1_gap_dop] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
+
+Q5 vs Q1 Ratio =
+VAR m = [COL Latest Month]
+RETURN CALCULATE ( MAX ( 'Cost of Living'[q5_q1_ratio] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )

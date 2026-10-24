@@ -1,0 +1,128 @@
+{
+  "name": "rd_bcrd_medallion_pipeline",
+  "description": "RD Economic & Financial Intelligence Platform: BCRD pipelines. FX chain (USD/DOP Bronze -> Silver -> Gold KPIs FX-001..009) and CPI chain (6 CPI/basket workbooks Bronze -> Silver -> Gold KPIs INF-001..006, then cost-of-living KPIs COL-001..003) run in parallel. Notebooks run from the Git folder (branch main).",
+  "tags": {
+    "project": "rd-economic-intelligence",
+    "source": "bcrd",
+    "domains": "fx-inflation",
+    "environment": "development"
+  },
+  "performance_target": "STANDARD",
+  "max_concurrent_runs": 1,
+  "timeout_seconds": 3600,
+  "email_notifications": {
+    "on_failure": [
+      "sffernandez06@gmail.com"
+    ],
+    "no_alert_for_skipped_runs": true
+  },
+  "schedule": {
+    "quartz_cron_expression": "0 0 7 ? * MON-FRI",
+    "timezone_id": "America/Santo_Domingo",
+    "pause_status": "PAUSED"
+  },
+  "tasks": [
+    {
+      "task_key": "bronze_bcrd_exchange_rates",
+      "description": "Load the BCRD USD/DOP Excel from the raw Volume into bronze.bcrd_exchange_rates_daily",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Bronze",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200
+    },
+    {
+      "task_key": "silver_bcrd_exchange_rates",
+      "description": "Type, validate and deduplicate into silver.bcrd_exchange_rates_daily",
+      "depends_on": [
+        {
+          "task_key": "bronze_bcrd_exchange_rates"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/01_BCRD_Exchange_Rates_Silver",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200
+    },
+    {
+      "task_key": "gold_exchange_rate_kpis",
+      "description": "Calculate FX KPIs into gold.exchange_rate_metrics and gold.exchange_rate_monthly_metrics",
+      "depends_on": [
+        {
+          "task_key": "silver_bcrd_exchange_rates"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/01_BCRD_Exchange_Rates_Gold",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200
+    },
+    {
+      "task_key": "bronze_bcrd_cpi",
+      "description": "Capture the 6 BCRD CPI and family-basket workbooks row by row into bronze.bcrd_cpi_raw_rows",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Bronze",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200
+    },
+    {
+      "task_key": "silver_bcrd_cpi",
+      "description": "Parse into 5 tidy monthly Silver tables with enforced DQ rules",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/02_BCRD_CPI_Silver",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "bronze_bcrd_cpi"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_inflation_kpis",
+      "description": "Calculate INF-001..006 into gold.inflation_metrics, reconciled with BCRD published values",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/02_BCRD_CPI_Gold",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "silver_bcrd_cpi"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_cost_of_living_kpis",
+      "description": "Calculate COL-001..003 into gold.cost_of_living_metrics",
+      "depends_on": [
+        {
+          "task_key": "silver_bcrd_cpi"
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/03_BCRD_Cost_of_Living_Gold",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200
+    }
+  ]
+}
