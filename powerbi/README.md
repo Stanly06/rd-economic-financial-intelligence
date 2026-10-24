@@ -52,6 +52,9 @@ Modeling rules:
 - Hide technical columns (`_gold_run_id`, `_gold_processed_ts`, `is_full_window_*`, `published_*`) from report view.
 - Mark `Calendar` as the date table.
 - Never sum rates or percentages; all measures use `MAX`/`AVERAGE` on a single date or month.
+- Headline, core and national measures remove series/segment filters (`REMOVEFILTERS`), so clicking a group, region or quintile bar never blanks the KPI cards; they still respond to dates.
+- Edit interactions: the group and region bars (Inflation page) and the quintile and region bars (Cost of Living page) do not filter each other.
+- FX 52-week values start in September 2022 and YTD values in 2022 by design (KPI decision D4); selecting an earlier month shows them blank.
 
 ## 3. Report pages
 

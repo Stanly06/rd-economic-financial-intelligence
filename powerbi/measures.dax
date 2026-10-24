@@ -94,23 +94,23 @@ IF ( MAXX ( 'FX Monthly', INT ( 'FX Monthly'[is_partial_month] ) ) = 1, "Month t
 // Inflation (INF-001 to INF-006)
 // =====================================================================
 CPI Latest Month =
-CALCULATE ( MAX ( 'Inflation'[reference_month] ), REMOVEFILTERS ( 'Inflation' ), 'Inflation'[series_type] = "headline" )
+CALCULATE ( MAX ( 'Inflation'[reference_month] ), REMOVEFILTERS ( 'Inflation'[series_name], 'Inflation'[series_type] ), 'Inflation'[series_type] = "headline" )
 
 Headline Inflation YoY % =
 VAR m = [CPI Latest Month]
-RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[yoy_inflation_pct] ), REMOVEFILTERS ( 'Inflation'[series_name] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
 
 Headline Inflation YTD % =
 VAR m = [CPI Latest Month]
-RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[ytd_inflation_pct] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[ytd_inflation_pct] ), REMOVEFILTERS ( 'Inflation'[series_name] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
 
 Headline Inflation MoM % =
 VAR m = [CPI Latest Month]
-RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[mom_inflation_pct] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[mom_inflation_pct] ), REMOVEFILTERS ( 'Inflation'[series_name] ), 'Inflation'[series_type] = "headline", 'Inflation'[reference_month] = m ), 100 )
 
 Core Inflation YoY % =
 VAR m = [CPI Latest Month]
-RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "core", 'Inflation'[reference_month] = m ), 100 )
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Inflation'[yoy_inflation_pct] ), REMOVEFILTERS ( 'Inflation'[series_name] ), 'Inflation'[series_type] = "core", 'Inflation'[reference_month] = m ), 100 )
 
 // For charts over time and by group/region (respects series slicers)
 Inflation YoY % =
@@ -128,7 +128,7 @@ AVERAGE ( 'Inflation'[index_value] )
 // Use on a monthly axis: Calendar[Month]
 // =====================================================================
 Headline YoY % (monthly axis) =
-DIVIDE ( CALCULATE ( AVERAGE ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "headline" ), 100 )
+DIVIDE ( CALCULATE ( AVERAGE ( 'Inflation'[yoy_inflation_pct] ), REMOVEFILTERS ( 'Inflation'[series_name] ), 'Inflation'[series_type] = "headline" ), 100 )
 
 FX Sell YoY % (monthly axis) =
 DIVIDE ( CALCULATE ( AVERAGE ( 'FX Monthly'[yoy_change_pct] ), 'FX Monthly'[rate_type] = "sell" ), 100 )
@@ -138,26 +138,26 @@ DIVIDE ( CALCULATE ( AVERAGE ( 'FX Monthly'[yoy_change_pct] ), 'FX Monthly'[rate
 // Cost of living (COL-001 to COL-003)
 // =====================================================================
 COL Latest Month =
-CALCULATE ( MAX ( 'Cost of Living'[reference_month] ), REMOVEFILTERS ( 'Cost of Living' ) )
+CALCULATE ( MAX ( 'Cost of Living'[reference_month] ), REMOVEFILTERS ( 'Cost of Living'[segment], 'Cost of Living'[segment_type] ) )
 
 Basket Cost =
 AVERAGE ( 'Cost of Living'[basket_cost_dop] )
 
 Basket Cost National =
 VAR m = [COL Latest Month]
-RETURN CALCULATE ( MAX ( 'Cost of Living'[basket_cost_dop] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
+RETURN CALCULATE ( MAX ( 'Cost of Living'[basket_cost_dop] ), REMOVEFILTERS ( 'Cost of Living'[segment] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
 
 Basket Cost YoY % =
 VAR m = [COL Latest Month]
-RETURN DIVIDE ( CALCULATE ( MAX ( 'Cost of Living'[yoy_change_pct] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m ), 100 )
+RETURN DIVIDE ( CALCULATE ( MAX ( 'Cost of Living'[yoy_change_pct] ), REMOVEFILTERS ( 'Cost of Living'[segment] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m ), 100 )
 
 Q5 vs Q1 Gap DOP =
 VAR m = [COL Latest Month]
-RETURN CALCULATE ( MAX ( 'Cost of Living'[q5_q1_gap_dop] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
+RETURN CALCULATE ( MAX ( 'Cost of Living'[q5_q1_gap_dop] ), REMOVEFILTERS ( 'Cost of Living'[segment] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
 
 Q5 vs Q1 Ratio =
 VAR m = [COL Latest Month]
-RETURN CALCULATE ( MAX ( 'Cost of Living'[q5_q1_ratio] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
+RETURN CALCULATE ( MAX ( 'Cost of Living'[q5_q1_ratio] ), REMOVEFILTERS ( 'Cost of Living'[segment] ), 'Cost of Living'[segment_type] = "national", 'Cost of Living'[reference_month] = m )
 
 
 // =====================================================================
@@ -169,7 +169,7 @@ FX Sell MoM % =
 DIVIDE ( CALCULATE ( AVERAGE ( 'FX Monthly'[mom_change_pct] ), 'FX Monthly'[rate_type] = "sell" ), 100 )
 
 Core YoY % (monthly axis) =
-DIVIDE ( CALCULATE ( AVERAGE ( 'Inflation'[yoy_inflation_pct] ), 'Inflation'[series_type] = "core" ), 100 )
+DIVIDE ( CALCULATE ( AVERAGE ( 'Inflation'[yoy_inflation_pct] ), REMOVEFILTERS ( 'Inflation'[series_name] ), 'Inflation'[series_type] = "core" ), 100 )
 
 Group YoY % (latest) =
 VAR m = [CPI Latest Month]
@@ -191,10 +191,10 @@ VAR m = [COL Latest Month]
 RETURN CALCULATE ( MAX ( 'Cost of Living'[basket_cost_dop] ), 'Cost of Living'[segment_type] = "region", 'Cost of Living'[reference_month] = m )
 
 National Basket Cost (monthly axis) =
-CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), 'Cost of Living'[segment_type] = "national" )
+CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), REMOVEFILTERS ( 'Cost of Living'[segment] ), 'Cost of Living'[segment_type] = "national" )
 
 Q1 Basket Cost (monthly axis) =
-CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), 'Cost of Living'[segment] = "Quintil 1" )
+CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), REMOVEFILTERS ( 'Cost of Living'[segment_type] ), 'Cost of Living'[segment] = "Quintil 1" )
 
 Q5 Basket Cost (monthly axis) =
-CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), 'Cost of Living'[segment] = "Quintil 5" )
+CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), REMOVEFILTERS ( 'Cost of Living'[segment_type] ), 'Cost of Living'[segment] = "Quintil 5" )
