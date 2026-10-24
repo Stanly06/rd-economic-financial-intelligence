@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. Phase 2, Data Discovery & Profiling, with first Bronze ingestion in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. The first Bronze pipeline (BCRD USD/DOP) is implemented and verified in development; the remaining Bronze/Silver/Gold pipelines will be built as each source's profiling, data dictionary and source-to-target mapping are reviewed.
+> **Status: in progress. Phase 2, Data Discovery & Profiling, with first Bronze ingestion in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. The first Bronze and Silver pipelines (BCRD USD/DOP) are implemented and verified in development; the remaining Bronze/Silver/Gold pipelines will be built as each source's profiling, data dictionary and source-to-target mapping are reviewed.
 
 ---
 
@@ -47,6 +47,8 @@ The platform only includes Dominican data. International data is allowed only as
 
 **Bronze ingestion** (in [`src/bronze/`](src/bronze/), development)
 - [`01_BCRD_Exchange_Rates_Bronze`](src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) loads the official BCRD daily USD/DOP file into `bronze.bcrd_exchange_rates_daily`: 1,253 rows (2021-09-20 to 2026-09-18), source values preserved, lineage metadata per row (file, sheet, source row, batch ID, ingestion timestamp), structural contract check, observational data-quality checks and idempotent re-runs. All quality checks passed on the first load.
+**Silver transformation** (in [`src/silver/`](src/silver/), development)
+- [`01_BCRD_Exchange_Rates_Silver`](src/silver/01_BCRD_Exchange_Rates_Silver.ipynb) builds `silver.bcrd_exchange_rates_daily`: typed, validated and deduplicated USD/DOP rates (1,253 business days, 0 rejected), enforced data-quality rules with a rejected-records log in the `quality` schema, Delta `CHECK` constraints, and Unity Catalog column documentation.
 
 ## Target architecture
 
@@ -69,7 +71,7 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | In progress (first Bronze pipeline: BCRD USD/DOP) |
+| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD USD/DOP: Bronze and Silver) |
 | Databricks SQL, dashboard and Power BI | Planned |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.

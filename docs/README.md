@@ -21,7 +21,7 @@ The documentation follows the complete project lifecycle, from business discover
 | 09 | Data Quality Rules & Data Contracts | Planned |
 | 10 | Databricks Environment Setup | In Progress — Initial infrastructure validated |
 | 11 | Bronze Layer | In Progress — first pipeline (BCRD USD/DOP) implemented in development |
-| 12 | Silver Layer | Planned |
+| 12 | Silver Layer | In Progress — first transformation (BCRD USD/DOP) implemented in development |
 | 13 | Gold Layer | Planned |
 | 14 | Databricks Workflows | Planned |
 | 15 | Monitoring & Data Quality | Planned |
@@ -97,6 +97,25 @@ Design rules applied:
 **Technical finding:** Databricks Free Edition serverless compute does not include `openpyxl`, which pandas requires to read `.xlsx` files. Every Excel-based ingestion notebook installs a pinned version (`openpyxl==3.1.5`) in its first code cell.
 
 **Important:** This is a development implementation, not a production pipeline. Orchestration (Lakeflow Jobs), incremental loading and the Silver and Gold layers are still pending.
+
+### Silver Layer Status
+
+**Implementation status:** First Silver transformation implemented and verified in development.
+
+| Pipeline | Target table | Result |
+|---|---|---|
+| [01_BCRD_Exchange_Rates_Silver](../src/silver/01_BCRD_Exchange_Rates_Silver.ipynb) | `rd_economic_intelligence.silver.bcrd_exchange_rates_daily` | 1,253 rows (2021-09-20 to 2026-09-18), one per business day; 0 rejected; reconciliation passed (Silver + rejected = Bronze) |
+
+Design rules applied:
+
+- Typed business columns: `rate_date` (DATE), `buy_rate` and `sell_rate` (DECIMAL(10,4)), plus derived `spread` and `mid_rate`. Rates are DOP per 1 USD.
+- BCRD official appreciation/depreciation values are kept as `bcrd_*_ref_pct` reference columns only. They use the reciprocal method and the opposite sign of a conventional change (KPI decision D1).
+- Enforced rules: valid date, positive buy and sell rates, buy rate not above sell rate, one row per date. Failing rows go to `quality.dq_rejected_records`; they are never silently dropped.
+- Delta table constraints (`NOT NULL` and `CHECK`) protect the table from future invalid writes.
+- Every run logs rule results in `quality.dq_rule_results`. Table and column descriptions are stored in Unity Catalog.
+- Load pattern: full refresh from Bronze (idempotent). To be revisited when incremental ingestion is added.
+
+**Data finding:** six gaps of five calendar days between published rates. All match Dominican public holidays when BCRD does not publish (Holy Week in 2022–2026, and Altagracia/Duarte days in January 2022). No data is missing. This confirms KPI decision D3: moving averages count business-day observations, not calendar days.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -679,7 +698,7 @@ Business Discovery       ██████████  COMPLETE
 Source Assessment        ██████████  COMPLETE
 Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
-Databricks Engineering   ██░░░░░░░░  IN PROGRESS (setup + first Bronze pipeline)
+Databricks Engineering   ███░░░░░░░  IN PROGRESS (setup + first Bronze and Silver pipelines)
 Analytics & BI           ░░░░░░░░░░  PLANNED
 ```
 
