@@ -23,11 +23,11 @@ The documentation follows the complete project lifecycle, from business discover
 | 11 | Bronze Layer | In Progress — first pipeline (BCRD USD/DOP) implemented in development |
 | 12 | Silver Layer | In Progress — first transformation (BCRD USD/DOP) implemented in development |
 | 13 | Gold Layer | In Progress — first KPI model (USD/DOP, FX-001 to FX-009) implemented in development |
-| 14 | Databricks Workflows | Planned |
+| 14 | Databricks Workflows | In Progress — BCRD Lakeflow Job implemented (7 tasks) |
 | 15 | Monitoring & Data Quality | Planned |
 | 16 | Databricks SQL Analytics | Planned |
 | 17 | Databricks Dashboard | Planned |
-| 18 | Power BI Dashboard | Planned |
+| 18 | Power BI Dashboard | In Progress — connection, model and measures defined |
 | 19 | Testing & Validation | Planned |
 | 20 | Business Insights | Planned |
 | 21 | Portfolio Publication | Planned |
@@ -47,7 +47,7 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 | Dataset / Source | Status | Evidence and next validation |
 |---|---|---|
 | BCRD — USD/DOP Exchange Rates | Initial profiling completed | Historical Excel reviewed; official incremental extraction remains unconfirmed |
-| BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Initial profiling completed; detailed validation pending | Six additional official spreadsheets obtained; monthly grain, base periods, methodology and wide-format normalization require documented checks |
+| BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Validated; Bronze, Silver and Gold implemented | Six workbooks parsed into five monthly Silver tables with 0 rejects; calculated inflation reconciles with BCRD published values |
 | MICM — Fuel Prices | Profiling documented; reconciliation in progress | Official CSV and XLSX obtained; format differences, repeated periods and zero prices require resolution |
 | Pro Consumidor — Consumer Prices | Initial profiling completed; validation in progress | CSV/XLSX reviewed; anomalous year values, historical coverage, geographic granularity and KPI feasibility require further validation |
 | Ministry of Agriculture — Agricultural Prices | Preliminary profiling and CSV/XLSX reconciliation completed | Wholesale and retail files (Aug 2017 – Sep 2026) profiled and reconciled; quality validation and KPI feasibility (AGR-001 to AGR-007) remain open |
@@ -136,6 +136,34 @@ Validation results (all passed):
 - **Reconciliation with BCRD official values:** our YTD change, restated with the BCRD reciprocal method, matches the published BCRD accumulated appreciation/depreciation on **2,358 of 2,358** comparable days (tolerance 0.15 points for BCRD's one-decimal rounding). This confirms the calculation logic and the sign convention of decision D1.
 
 **Data finding:** the source extract starts on 2021-09-20 and ends on 2026-09-18, so the first and last months do not cover a full month. They are flagged with `is_partial_month` so dashboards can label them as month-to-date. Full 52-week windows start on 2022-09-19 and full year-over-year values in September 2022.
+
+### CPI and Family Basket Pipelines
+
+**Implementation status:** Implemented and verified in development.
+
+| Layer | Notebook | Output | Result |
+|---|---|---|---|
+| Bronze | [02_BCRD_CPI_Bronze](../src/bronze/02_BCRD_CPI_Bronze.ipynb) | `bronze.bcrd_cpi_raw_rows` | 1,843 rows from 6 workbooks, captured as published |
+| Silver | [02_BCRD_CPI_Silver](../src/silver/02_BCRD_CPI_Silver.ipynb) | 5 tables (below) | 6,476 records, 0 rejected, all rules passed |
+| Gold | [02_BCRD_CPI_Gold](../src/gold/02_BCRD_CPI_Gold.ipynb) | `gold.inflation_metrics` | 5,568 rows, INF-001 to INF-006 |
+| Gold | [03_BCRD_Cost_of_Living_Gold](../src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) | `gold.cost_of_living_metrics` | 908 rows, COL-001 to COL-003 |
+
+Silver tables: `bcrd_cpi_national_monthly` (1984+), `bcrd_cpi_core_monthly` (2000+), `bcrd_cpi_groups_monthly` (12 groups, 1999+), `bcrd_cpi_regions_monthly` (4 regions, 2011+), `bcrd_family_basket_monthly` (quintiles and national 2018+, regions Oct-2020+).
+
+Design decisions:
+
+- **Bronze captures rows, not columns.** The BCRD workbooks are presentation tables (titles, multi-row headers, the year written once per block, Spanish month names, index/variation pairs, methodology notes), each with a different layout. Bronze stores every row as published; layout interpretation happens in Silver, in tested, reusable parsers ([`src/shared/bcrd_cpi_parsers.py`](../src/shared/bcrd_cpi_parsers.py)).
+- **Enforced rules:** unique business key, positive values, contiguous months per series, no unparseable values. Silver is not written if any enforced rule fails.
+- **Region labels standardized:** BCRD writes "Región Norte" in the CPI file and "Región Norte o Cibao" in the basket file; both map to `Norte o Cibao`, and the source label is kept.
+- **Retropolation flagged:** basket quintile values before October 2020 are a BCRD retropolation (`is_retropolated`).
+
+Reconciliation with BCRD published values (all passed): monthly variation 5,550/5,550; 12-month 808/808; year-to-date 808/808.
+
+**Data finding:** the family basket is the ENGIH-2018 basket indexed by CPI, so its national and regional year-over-year change equals CPI inflation. The cost-of-living KPIs add the DOP level and the income-quintile view, not an independent inflation signal.
+
+### Orchestration Status
+
+Lakeflow Job `rd_bcrd_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs the FX chain and the CPI chain in parallel from the Git folder (branch `main`): 7 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -456,7 +484,7 @@ The source-discovery sequence follows business priority and source readiness:
 
 ```text
 01. BCRD — USD/DOP Exchange Rates [initial profiling completed]
-02. BCRD — CPI and Family Basket datasets [initial profiling completed]
+02. BCRD — CPI and Family Basket datasets [validated; pipelines implemented]
 03. BCRD — Monetary Policy Rate [pending source-file profiling]
 04. MICM — Dominican Fuel Prices [reconciliation in progress]
 05. Pro Consumidor — Consumer / Basic Basket Prices [initial profiling completed; validation in progress]
@@ -718,8 +746,8 @@ Business Discovery       ██████████  COMPLETE
 Source Assessment        ██████████  COMPLETE
 Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
-Databricks Engineering   ████░░░░░░  IN PROGRESS (USD/DOP end-to-end: Bronze, Silver, Gold)
-Analytics & BI           ░░░░░░░░░░  PLANNED
+Databricks Engineering   ██████░░░░  IN PROGRESS (BCRD end to end: FX, CPI, basket + Job)
+Analytics & BI           ██░░░░░░░░  IN PROGRESS (Power BI model and measures)
 ```
 
 ---

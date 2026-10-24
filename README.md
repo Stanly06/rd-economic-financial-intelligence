@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. Phase 2, Data Discovery & Profiling, with first Bronze ingestion in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. The first end-to-end pipeline (BCRD USD/DOP: Bronze, Silver and Gold KPIs) is implemented and verified in development; the remaining Bronze/Silver/Gold pipelines will be built as each source's profiling, data dictionary and source-to-target mapping are reviewed.
+> **Status: in progress. All BCRD sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket are ingested, validated and modeled into Gold KPIs (FX, INF and COL), orchestrated by one Lakeflow Job, and reconciled with BCRD published values. MICM, Pro Consumidor and Agriculture pipelines will follow once their profiling issues are resolved.
 
 ---
 
@@ -18,8 +18,8 @@ The platform only includes Dominican data. International data is allowed only as
 
 | Institution | Domain | Role | Profiling status |
 |---|---|---|---|
-| Banco Central (BCRD) | USD/DOP exchange rate | Core | Initial profiling completed |
-| Banco Central (BCRD) | CPI, core CPI, CPI by group and region, family basket | Core | Initial profiling completed; detailed validation pending |
+| Banco Central (BCRD) | USD/DOP exchange rate | Core | Validated; pipelines implemented (Bronze, Silver, Gold) |
+| Banco Central (BCRD) | CPI, core CPI, CPI by group and region, family basket | Core | Validated; pipelines implemented (Bronze, Silver, Gold) |
 | Banco Central (BCRD) | Monetary policy rate | Core | Pending |
 | MICM | Fuel prices | Core | Profiled; CSV vs. XLSX reconciliation in progress |
 | Pro Consumidor | Consumer / basic basket prices | Core | Initial profiling completed; KPI feasibility in progress |
@@ -51,6 +51,17 @@ The platform only includes Dominican data. International data is allowed only as
 - [`01_BCRD_Exchange_Rates_Silver`](src/silver/01_BCRD_Exchange_Rates_Silver.ipynb) builds `silver.bcrd_exchange_rates_daily`: typed, validated and deduplicated USD/DOP rates (1,253 business days, 0 rejected), enforced data-quality rules with a rejected-records log in the `quality` schema, Delta `CHECK` constraints, and Unity Catalog column documentation.
 **Gold KPIs** (in [`src/gold/`](src/gold/), development)
 - [`01_BCRD_Exchange_Rates_Gold`](src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) calculates foreign-exchange KPIs FX-001 to FX-009 into `gold.exchange_rate_metrics` (daily) and `gold.exchange_rate_monthly_metrics` (monthly). Results reconcile with BCRD official appreciation/depreciation values on 2,358 of 2,358 comparable days.
+**CPI and family basket** (development)
+- [`02_BCRD_CPI_Bronze`](src/bronze/02_BCRD_CPI_Bronze.ipynb) captures the six BCRD CPI and basket workbooks row by row as published (`bronze.bcrd_cpi_raw_rows`).
+- [`02_BCRD_CPI_Silver`](src/silver/02_BCRD_CPI_Silver.ipynb) parses each presentation layout with reusable parsers in [`src/shared/`](src/shared/bcrd_cpi_parsers.py) into five tidy monthly tables (national, core, 12 expenditure groups, 4 regions, family basket). 6,476 records, 0 rejected.
+- [`02_BCRD_CPI_Gold`](src/gold/02_BCRD_CPI_Gold.ipynb) calculates inflation KPIs INF-001 to INF-006 into `gold.inflation_metrics`, reconciled with BCRD published variations (monthly 5,550/5,550; 12-month and year-to-date 808/808).
+- [`03_BCRD_Cost_of_Living_Gold`](src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) calculates cost-of-living KPIs COL-001 to COL-003 into `gold.cost_of_living_metrics`.
+
+**Orchestration**
+- Lakeflow Job `rd_bcrd_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): FX and CPI chains run in parallel (7 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
+
+**Power BI**
+- [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for four pages: Foreign Exchange, Inflation, FX vs Inflation and Cost of Living.
 
 ## Target architecture
 
@@ -73,8 +84,8 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD USD/DOP complete end to end; Jobs pending) |
-| Databricks SQL, dashboard and Power BI | Planned |
+| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD complete: FX, CPI, basket + Job; MICM, Pro Consumidor, Agriculture pending) |
+| Databricks SQL, dashboard and Power BI | In progress (Power BI model and measures defined) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.
 

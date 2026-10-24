@@ -496,14 +496,18 @@ This naming convention provides stable identifiers that can be referenced across
 
 # 7. Inflation & CPI KPIs
 
-| KPI ID | KPI Name | Unit | Granularity | Priority |
-|---|---|---|---|---|
-| **INF-001** | CPI Index | Index | Monthly | MVP |
-| **INF-002** | Monthly Inflation | % | Monthly | MVP |
-| **INF-003** | YoY Inflation | % | Monthly | MVP |
-| **INF-004** | YTD Inflation | % | Monthly | MVP |
-| **INF-005** | Core Inflation | % | Monthly | MVP |
-| **INF-006** | Inflation by Expenditure Group | % | Monthly | MVP |
+**Validation status:** Validated (2026-10-23) against the official BCRD CPI workbooks (base October 2019 – September 2020 = 100). Calculated values are stored in `gold.inflation_metrics` and reconcile with the variations BCRD publishes: monthly 5,550/5,550, 12-month 808/808, year-to-date 808/808.
+
+| KPI ID | KPI Name | Unit | Granularity | Priority | Status |
+|---|---|---|---|---|---|
+| **INF-001** | CPI Index | Index | Monthly | MVP | Validated |
+| **INF-002** | Monthly Inflation | % | Monthly | MVP | Validated |
+| **INF-003** | YoY Inflation | % | Monthly | MVP | Validated |
+| **INF-004** | YTD Inflation | % | Monthly | MVP | Validated |
+| **INF-005** | Core Inflation | % | Monthly | MVP | Validated |
+| **INF-006** | Inflation by Expenditure Group | % | Monthly | MVP | Validated |
+
+Validated coverage: headline CPI from 1984, expenditure groups (12) from 1999, core CPI from 2000, and regional CPI (Ozama, Norte o Cibao, Este, Sur) from 2011. Regional CPI is available in the same model as `series_type = region`. Windows without enough history return NULL with an `is_full_window_*` flag, the same rule as FX decision D4.
 
 ---
 
@@ -593,6 +597,32 @@ Category
 ```
 
 This KPI will help identify which categories are experiencing the strongest price pressure.
+
+---
+
+# 7b. Cost of Living KPIs (BCRD Family Basket)
+
+Added on 2026-10-23 to answer **BQ-013: How is the overall cost-of-living environment changing?** at macro level. Product-level prices remain the scope of the Consumer & Basic Basket KPIs (CON-001 to CON-010, Pro Consumidor).
+
+**Validation status:** Validated against the BCRD "Costo de la Canasta Familiar" workbooks (by income quintile and national from 2018; by region from October 2020). Stored in `gold.cost_of_living_metrics` (grain: month × segment).
+
+| KPI ID | KPI Name | Unit | Granularity | Priority | Status |
+|---|---|---|---|---|---|
+| **COL-001** | Family Basket Cost | DOP/month | Monthly | MVP | Validated |
+| **COL-002** | Basket Cost YoY % | % | Monthly | MVP | Validated |
+| **COL-003** | Quintile 5 vs Quintile 1 Gap | DOP; ratio | Monthly | MVP | Validated |
+
+```text
+COL-001  Basket cost (published BCRD value, DOP)
+COL-002  (Cost_t / Cost_t-12 - 1) × 100
+COL-003  Q5 - Q1 (DOP)   and   Q5 / Q1 (ratio), same month
+```
+
+Methodology notes:
+
+- The basket is the ENGIH-2018 household basket **indexed by CPI**. Its national and regional year-over-year change therefore equals headline and regional CPI inflation. COL KPIs add what CPI cannot show: the cost **level in DOP** and the **income-quintile** view.
+- Quintile and national values before October 2020 are a BCRD **retropolation**. They are flagged `is_retropolated`, and year-over-year values that use them are flagged `uses_retropolated_value`.
+- COL-003 is a month-level value stored on the national row of each month.
 
 ---
 
