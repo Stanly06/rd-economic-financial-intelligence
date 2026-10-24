@@ -26,4 +26,8 @@
 - Two periods overlap: `abr - may 26` and `abr - jun 26`.
 - DOP/kWh selling price for May 2026 matches the MEM PDF (Edenorte 10.13, Edesur 10.51).
 
+## Automatic acquisition
+
+The MEM website exposes its uploads through the WordPress REST API (`https://mem.gob.do/wp-json/wp/v2/media?search=Anexos`). `06_MEM_Electricity_Download` picks the newest `.xlsx` whose name contains `Desempeno` and `Anexos`, skips it if already landed, validates the required sheets and writes it unchanged to the Volume. File names vary month to month (`-vf`, `._-`), so selection is by publication date, not by name pattern.
+
 Do not commit the original workbook; it is kept in the Volume `bronze.mem_raw/ede_performance/`.

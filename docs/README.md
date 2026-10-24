@@ -23,7 +23,7 @@ The documentation follows the complete project lifecycle, from business discover
 | 11 | Bronze Layer | In Progress — BCRD, MICM and Pro Consumidor implemented in development |
 | 12 | Silver Layer | In Progress — BCRD, MICM and Pro Consumidor implemented in development |
 | 13 | Gold Layer | In Progress — FX, INF, COL, FUEL and CON KPIs implemented in development |
-| 14 | Databricks Workflows | In Progress — Lakeflow Job implemented (16 tasks, 5 parallel chains) |
+| 14 | Databricks Workflows | In Progress — main Lakeflow Job (17 tasks, 5 parallel chains) + scheduled weekly electricity job |
 | 15 | Monitoring & Data Quality | Planned |
 | 16 | Databricks SQL Analytics | Planned |
 | 17 | Databricks Dashboard | Planned |
@@ -190,6 +190,7 @@ Design decisions:
 
 | Layer | Notebook | Output | Result |
 |---|---|---|---|
+| Landing | [06_MEM_Electricity_Download](../src/bronze/06_MEM_Electricity_Download.ipynb) | `bronze.mem_raw/ede_performance/` | Newest annex found through the MEM website media index; skipped when already landed (same name or same content hash); structure validated before writing |
 | Bronze | [06_MEM_Electricity_Bronze](../src/bronze/06_MEM_Electricity_Bronze.ipynb) | `bronze.mem_electricity_raw_rows` | 182 + 39 sheet rows from the July 2026 annex |
 | Silver | [06_MEM_Electricity_Silver](../src/silver/06_MEM_Electricity_Silver.ipynb) | `silver.mem_ede_monthly`, `silver.mem_tariffs_quarterly` | 35,446 monthly values (2009–Jul 2026); 4,430 tariff values (29 periods, 2020–Sep 2026); all enforced rules passed |
 | Gold | [06_MEM_Electricity_Gold](../src/gold/06_MEM_Electricity_Gold.ipynb) | `gold.electricity_metrics`, `gold.electricity_tariff_monthly`, `gold.electricity_bts1_bill` | 316 / 6,822 / 486 rows, ENE-001 to ENE-009, January 2020 to July 2026 |
@@ -205,7 +206,9 @@ Design decisions:
 
 ### Orchestration Status
 
-Lakeflow Job `rd_economic_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs five independent chains in parallel from the Git folder (branch `main`): BCRD FX, BCRD CPI (then cost of living), MICM fuel, Pro Consumidor and MEM electricity. 16 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
+Lakeflow Job `rd_economic_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs five independent chains in parallel from the Git folder (branch `main`): BCRD FX, BCRD CPI (then cost of living), MICM fuel, Pro Consumidor and MEM electricity (which starts with an automatic download of the newest MEM annex). 17 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
+
+Lakeflow Job `rd_mem_electricity_weekly` ([definition](../resources/jobs/mem_electricity_weekly.job.json)) is **active**: every Monday at 07:23 (America/Santo_Domingo) it checks the MEM website for a new annex; a condition task (`{{tasks.download_mem_annex.values.downloaded}} == true`) runs Bronze, Silver and Gold only when a new file landed, so quiet weeks cost one short task.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -768,7 +771,7 @@ Analytics
 The immediate priorities are:
 
 1. Obtain earlier Pro Consumidor reports to enable CON-006 to CON-008, and geographic detail for CON-009.
-2. Automate the monthly download of the MEM annex (electricity) so the Job can run on schedule.
+2. Apply the same automatic-download pattern to the other sources where the publisher offers a stable URL or API (BCRD, MICM).
 3. Assess Ministry of Agriculture agricultural-price datasets.
 4. Profile the BCRD monetary policy rate source and verify incremental extraction options for BCRD data.
 5. Consolidate source schemas, candidate business keys, quality rules, methodology notes, and KPI traceability as inputs to `05_Data_Dictionary`.

@@ -1,0 +1,100 @@
+{
+  "name": "rd_mem_electricity_weekly",
+  "description": "Weekly check for a new MEM Informe de Desempeño annex. If a new file was published, it is landed and Bronze, Silver and Gold electricity tables (ENE-001..009) are rebuilt; otherwise the run stops after the check.",
+  "tags": {
+    "project": "rd-economic-intelligence",
+    "source": "mem",
+    "domains": "electricity",
+    "environment": "development"
+  },
+  "performance_target": "STANDARD",
+  "max_concurrent_runs": 1,
+  "timeout_seconds": 3600,
+  "email_notifications": {
+    "on_failure": [
+      "sffernandez06@gmail.com"
+    ],
+    "no_alert_for_skipped_runs": true
+  },
+  "schedule": {
+    "quartz_cron_expression": "0 23 7 ? * MON",
+    "timezone_id": "America/Santo_Domingo",
+    "pause_status": "UNPAUSED"
+  },
+  "tasks": [
+    {
+      "task_key": "download_mem_annex",
+      "description": "Download the newest MEM Informe de Desempeño annex into the mem_raw Volume (skips if already landed)",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 2,
+      "min_retry_interval_millis": 120000,
+      "timeout_seconds": 900
+    },
+    {
+      "task_key": "new_annex_published",
+      "description": "Continue only when the download task landed a new file",
+      "condition_task": {
+        "op": "EQUAL_TO",
+        "left": "{{tasks.download_mem_annex.values.downloaded}}",
+        "right": "true"
+      },
+      "depends_on": [
+        {
+          "task_key": "download_mem_annex"
+        }
+      ]
+    },
+    {
+      "task_key": "bronze_mem_electricity",
+      "description": "Capture the annex sheets into bronze.mem_electricity_raw_rows",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Bronze",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "new_annex_published",
+          "outcome": "true"
+        }
+      ]
+    },
+    {
+      "task_key": "silver_mem_electricity",
+      "description": "Parse into silver.mem_ede_monthly and silver.mem_tariffs_quarterly",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/06_MEM_Electricity_Silver",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "bronze_mem_electricity"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_electricity_kpis",
+      "description": "Calculate ENE-001..009 into the electricity Gold tables",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/06_MEM_Electricity_Gold",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000,
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "silver_mem_electricity"
+        }
+      ]
+    }
+  ]
+}

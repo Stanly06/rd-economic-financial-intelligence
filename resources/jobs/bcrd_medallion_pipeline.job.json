@@ -211,6 +211,17 @@
       ]
     },
     {
+      "task_key": "download_mem_annex",
+      "description": "Download the newest MEM Informe de Desempeño annex into the mem_raw Volume (skips if already landed)",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 2,
+      "min_retry_interval_millis": 120000,
+      "timeout_seconds": 900
+    },
+    {
       "task_key": "bronze_mem_electricity",
       "description": "Capture the MEM Informe de Desempeño annex (EDE indicators and tariff sheets) into bronze.mem_electricity_raw_rows",
       "notebook_task": {
@@ -219,7 +230,12 @@
       },
       "max_retries": 1,
       "min_retry_interval_millis": 60000,
-      "timeout_seconds": 1200
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "download_mem_annex"
+        }
+      ]
     },
     {
       "task_key": "silver_mem_electricity",
