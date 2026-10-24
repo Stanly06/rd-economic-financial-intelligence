@@ -1038,6 +1038,8 @@ gold.consumer_price_metrics
 
 # 14. Agricultural Price KPIs
 
+> **Status:** AGR-001 to AGR-005 Validated (2026-10-24) — Ministry of Agriculture weekly market reports, August 2017 to September 2026, in `gold.agri_price_monthly` (channel × market × product × unit × month) and `gold.agri_rubro_monthly` (product group × month). AGR-007 Validated at **market** level (seven retail markets of Gran Santo Domingo vs their average; the source has no regions). AGR-006 Proposed — seasonal methodology not defined.
+
 | KPI ID | KPI Name | Unit |
 |---|---|---|
 | **AGR-001** | Average Agricultural Price | DOP / unit |

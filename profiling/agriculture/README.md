@@ -2,7 +2,7 @@
 
 **Project:** RD Economic & Financial Intelligence Platform  
 **Domain:** Agricultural Prices  
-**Status:** Preliminary CSV profiling completed; Excel cross-format reconciliation pending  
+**Status:** Implemented in development (2026-10-24) — see the Ministry of Agriculture pipeline in `docs/README.md`; the profiling below is kept as the original assessment  
 **Assessment date:** 2026-10-11
 
 ## 1. Purpose and scope
@@ -143,3 +143,12 @@ No Databricks objects or pipelines have been created as part of this profiling.
 6. Specify seasonal index methodology and volatility observation window before calculating AGR-005 or AGR-006.
 
 **Current status:** All seven agricultural KPIs have been mapped to the business catalog. No agricultural KPI is marked production-ready. Cross-format and business-grain validation remain open.
+
+## 11. Implementation outcome (2026-10-24)
+
+- **Source and acquisition:** datos.gob.do CKAN dataset `info` (Ministerio de Agricultura, "Informe Precios de Mercado Interdiario, 2017-2026"); files served from `agricultura.gob.do/transparencia/wp-content/uploads/`. Downloaded automatically by `07_MA_Agricultural_Prices_Download`.
+- **Cross-format reconciliation (open question 1, closed):** Excel and CSV have the same rows (51,559 retail incl. header; 44,533 wholesale) and agree on all 367,475 comparable price cells within 0.01; the CSV rounds decimals. The malformed wholesale record (14 cells, year `2025+B38846:C38849`) and 6 other rows with a broken layout are rejected.
+- **Zero prices (open question 2):** treated as *not quoted*, together with `N/D` — 113,706 of 405,381 price cells.
+- **Duplicates (open question 4):** the later row in the file is kept for each channel × market × product × unit × week; 2,799 earlier cells are logged in `quality.dq_rejected_records`.
+- **Units (open question 5):** only synonyms are unified (`Lib`/`lb`, `Und`/`Unidad`, `Doc`/`Docena`, `Paq`/`Paquete`); no conversion between pounds, sacks or quintals is made, so retail–wholesale spreads are not calculated.
+- **KPIs:** AGR-001..005 validated in `gold.agri_price_monthly`; AGR-007 delivered at market level; AGR-006 pending a methodology.

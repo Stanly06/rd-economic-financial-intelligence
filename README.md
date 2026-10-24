@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. BCRD, MICM, Pro Consumidor and MEM (electricity) sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), and electricity (ENE) comes from the MEM monthly distributor report annex, all orchestrated by one Lakeflow Job. Agriculture is next.
+> **Status: in progress. All six sources (BCRD FX, BCRD CPI, MICM, Pro Consumidor, MEM electricity and Ministry of Agriculture) run end to end in development, with automatic download and incremental ingestion.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), and electricity (ENE) comes from the MEM monthly distributor report annex, agricultural market prices (AGR) come from the Ministry of Agriculture weekly reports, all orchestrated by one Lakeflow Job.
 
 ---
 
@@ -24,7 +24,7 @@ The platform only includes Dominican data. International data is allowed only as
 | MEM / SIE | Electricity: distributor prices, losses, collection and regulated tariffs | Phase 2 | Validated (MEM annex); pipelines implemented (Bronze, Silver, Gold) |
 | MICM | Fuel prices | Core | Validated (XLSX authoritative); pipelines implemented (Bronze, Silver, Gold) |
 | Pro Consumidor | Consumer / basic basket prices | Core | Validated for Jul–Sep 2026; pipelines implemented (Bronze, Silver, Gold). YoY, YTD, volatility and regional KPIs need more history |
-| Ministry of Agriculture | Agricultural prices (wholesale and retail) | Core | Preliminary profiling and CSV vs. XLSX reconciliation completed; quality validation open |
+| Ministry of Agriculture | Agricultural prices (wholesale and retail) | Core | Implemented: Bronze → Silver → Gold (AGR-001..005, AGR-007), automatic download from datos.gob.do |
 | U.S. EIA | WTI / Brent | External driver | Pending |
 
 ## What is built so far
@@ -79,6 +79,12 @@ The platform only includes Dominican data. International data is allowed only as
 - [`06_MEM_Electricity_Silver`](src/silver/06_MEM_Electricity_Silver.ipynb) parses them with [`src/shared/mem_parsers.py`](src/shared/mem_parsers.py) into `silver.mem_ede_monthly` (38 indicators × Edenorte, Edesur, Edeeste and total, 2009 to July 2026; 35,446 values) and `silver.mem_tariffs_quarterly` (7 tariffs, reference and applied, 29 periods since 2020; 4,430 values).
 - [`06_MEM_Electricity_Gold`](src/gold/06_MEM_Electricity_Gold.ipynb) calculates ENE-001 to ENE-009 from January 2020 into `gold.electricity_metrics`, `gold.electricity_tariff_monthly` and `gold.electricity_bts1_bill`. The average selling price reconciles with the MEM PDF report (May 2026).
 
+**Ministry of Agriculture market prices** (development)
+- [`07_MA_Agricultural_Prices_Download`](src/bronze/07_MA_Agricultural_Prices_Download.ipynb) reads the current retail (*Minorista*) and wholesale (*Mayorista*) report URLs from datos.gob.do (dataset `info`, "Informe Precios de Mercado Interdiario, 2017-2026") and lands Excel and CSV in `agriculture_raw`.
+- [`07_MA_Agricultural_Prices_Bronze`](src/bronze/07_MA_Agricultural_Prices_Bronze.ipynb) ingests with Auto Loader (`bronze.ma_agri_files`); every source row is kept as a JSON text array (`bronze.ma_agri_prices_raw`: 51,559 retail and 44,533 wholesale rows per format). Retail is legacy `.xls`, read with `xlrd`.
+- [`07_MA_Agricultural_Prices_Silver`](src/silver/07_MA_Agricultural_Prices_Silver.ipynb) builds `silver.ma_agri_prices_weekly` (288,618 weekly prices, August 2017 to September 2026): the seven retail market columns are unpivoted, week/month/year typos are mapped with controlled dictionaries, 24 rubro spellings map to 10 product groups, `0` and `N/D` are treated as not quoted (113,706 cells), Excel errors are rejected (258 cells). Excel and CSV agree on all 367,475 comparable price cells.
+- [`07_MA_Agricultural_Prices_Gold`](src/gold/07_MA_Agricultural_Prices_Gold.ipynb) calculates AGR-001 to AGR-005 and AGR-007 into `gold.agri_price_monthly` (84,595 rows: channel × market × product × unit × month, plus an equal-weight average of the retail markets) and a product-group view `gold.agri_rubro_monthly` (2,095 rows). AGR-007 compares **markets of Gran Santo Domingo**, since the source has no regions or provinces.
+
 **Orchestration**
 - Lakeflow Job `rd_economic_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): five independent chains (BCRD FX, BCRD CPI, MICM fuel, Pro Consumidor, MEM electricity) run in parallel, Bronze → Silver → Gold within each chain (17 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
 - Lakeflow Job `rd_mem_electricity_weekly` ([definition](resources/jobs/mem_electricity_weekly.job.json)), **scheduled every Monday 07:23 (Santo Domingo)**: [`06_MEM_Electricity_Download`](src/bronze/06_MEM_Electricity_Download.ipynb) finds the newest MEM annex on the MEM website and lands it in the Volume; a condition task runs Bronze → Silver → Gold only when a new file was published. Electricity is the first source that updates without manual uploads.
@@ -107,7 +113,7 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM, Pro Consumidor and MEM electricity complete + Job; Agriculture pending) |
+| Bronze / Silver / Gold pipelines + Jobs | Complete in development for all six sources (automatic download + Auto Loader + one Lakeflow Job) |
 | Databricks SQL, dashboard and Power BI | In progress (Power BI report: 7 pages on FX, inflation, cost of living, fuel, consumer prices and electricity) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.

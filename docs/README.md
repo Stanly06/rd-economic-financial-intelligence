@@ -50,7 +50,7 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 | BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Validated; Bronze, Silver and Gold implemented | Six workbooks parsed into five monthly Silver tables with 0 rejects; calculated inflation reconciles with BCRD published values |
 | MICM — Fuel Prices | Validated; pipelines implemented | XLSX authoritative (CSV = XLSX rounded to whole pesos, 0 differences on 19,184 values); zero = not published; four December 2023 weeks published twice resolved to the later block |
 | Pro Consumidor — Consumer Prices | Validated for Jul–Sep 2026; pipelines implemented | XLSX used (CSV malformed); 30 rows with years outside the report period rejected; only 3 months and no geography, so YoY, YTD, volatility and regional KPIs are not calculable yet |
-| Ministry of Agriculture — Agricultural Prices | Preliminary profiling and CSV/XLSX reconciliation completed | Wholesale and retail files (Aug 2017 – Sep 2026) profiled and reconciled; quality validation and KPI feasibility (AGR-001 to AGR-007) remain open |
+| Ministry of Agriculture — Agricultural Prices | Implemented: download, Bronze, Silver, Gold (AGR-001..005, AGR-007) | Wholesale and retail files (Aug 2017 – Sep 2026) profiled and reconciled; quality validation and KPI feasibility (AGR-001 to AGR-007) remain open |
 | EIA — WTI / Brent | Not started | External driver only under RD-First governance |
 
 **Current phase:** Data Discovery & Profiling  
@@ -209,6 +209,25 @@ Design decisions:
 - **Reference vs applied tariff** gap is reported as a subsidy proxy, not as an official subsidy figure.
 
 **Data finding:** in July 2026 a 200 kWh BTS-1 bill is about RD$1,321 (Edenorte) with the applied tariff versus about RD$3,412 with the reference tariff; Edeeste's 12-month energy losses (about 56%) are roughly twice those of Edenorte and Edesur.
+
+### Ministry of Agriculture Pipeline
+
+**Implementation status:** Implemented and verified in development (2026-10-24).
+
+| Layer | Notebook | Output | Result |
+|---|---|---|---|
+| Landing | [07_MA_Agricultural_Prices_Download](../src/bronze/07_MA_Agricultural_Prices_Download.ipynb) | `bronze.agriculture_raw/{retail_prices,wholesale_prices}/` | Current URLs from datos.gob.do (CKAN dataset `info`, organization `ministerio-de-agricultura-ma`); retail `.xls` (labelled XLSX on the portal), wholesale `.xlsx`, and both CSVs |
+| Bronze | [07_MA_Agricultural_Prices_Bronze](../src/bronze/07_MA_Agricultural_Prices_Bronze.ipynb) | `bronze.ma_agri_files`, `bronze.ma_agri_prices_raw` | Auto Loader; 4 files, 51,559 retail and 44,533 wholesale rows per format, kept as JSON text arrays |
+| Silver | [07_MA_Agricultural_Prices_Silver](../src/silver/07_MA_Agricultural_Prices_Silver.ipynb) | `silver.ma_agri_prices_weekly` | 288,618 weekly prices (retail 248,778 in 7 markets, wholesale 39,840), Aug 2017 – Sep 2026, 10 product groups. Rejected: 7 rows with a broken layout, 3 with an invalid period, 258 Excel-error cells, 2,799 duplicate cells (later row kept). Not quoted (`0`, `N/D`): 113,706 cells. Excel vs CSV: 0 differences on 367,475 cells. Reconciliation of rows and cells enforced before writing |
+| Gold | [07_MA_Agricultural_Prices_Gold](../src/gold/07_MA_Agricultural_Prices_Gold.ipynb) | `gold.agri_price_monthly`, `gold.agri_rubro_monthly` | 84,595 / 2,095 rows; AGR-001..005 and AGR-007; manual check: retail milk, all markets, September 2026 = RD$86.10, MoM +0.5499%, identical to Gold |
+
+Design decisions:
+
+- **Excel is authoritative:** the CSV rounds prices (e.g. 8.129999 → 8.13); both are ingested and compared cell by cell.
+- **Not quoted vs price:** `0`, `N/D`, blank, `-` and `.` mean the product was not quoted in that market and week (the profiling showed 12–27% zeros per market); they are counted, not stored as prices.
+- **Controlled dictionaries** (week labels, months, 10 product groups, unit synonyms) are in the notebook; values outside them are rejected or reported, never guessed. Product labels equal ignoring case and spaces get one canonical label; different words are never merged.
+- **Comparability:** a series is channel + market + product + unit. Retail and wholesale are not compared (different units: pound vs sack/quintal).
+- **AGR-007** is delivered as a *market* difference (seven markets of Gran Santo Domingo vs their equal-weight average). The source has no province or region, so no regional claim is made. AGR-006 (seasonal index) is not calculated until a methodology is defined.
 
 ### Orchestration Status
 
