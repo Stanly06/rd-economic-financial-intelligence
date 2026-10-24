@@ -20,7 +20,7 @@ The documentation follows the complete project lifecycle, from business discover
 | 08 | Logical & Physical Data Model | Planned |
 | 09 | Data Quality Rules & Data Contracts | Planned |
 | 10 | Databricks Environment Setup | In Progress — Initial infrastructure validated |
-| 11 | Bronze Layer | Planned |
+| 11 | Bronze Layer | In Progress — first pipeline (BCRD USD/DOP) implemented in development |
 | 12 | Silver Layer | Planned |
 | 13 | Gold Layer | Planned |
 | 14 | Databricks Workflows | Planned |
@@ -50,7 +50,7 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 | BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Initial profiling completed; detailed validation pending | Six additional official spreadsheets obtained; monthly grain, base periods, methodology and wide-format normalization require documented checks |
 | MICM — Fuel Prices | Profiling documented; reconciliation in progress | Official CSV and XLSX obtained; format differences, repeated periods and zero prices require resolution |
 | Pro Consumidor — Consumer Prices | Initial profiling completed; validation in progress | CSV/XLSX reviewed; anomalous year values, historical coverage, geographic granularity and KPI feasibility require further validation |
-| Ministry of Agriculture — Agricultural Prices | Not started | Source-format and historical coverage assessment pending |
+| Ministry of Agriculture — Agricultural Prices | Preliminary profiling and CSV/XLSX reconciliation completed | Wholesale and retail files (Aug 2017 – Sep 2026) profiled and reconciled; quality validation and KPI feasibility (AGR-001 to AGR-007) remain open |
 | EIA — WTI / Brent | Not started | External driver only under RD-First governance |
 
 **Current phase:** Data Discovery & Profiling  
@@ -59,6 +59,7 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 **Technical documentation:**
 - [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
 - [Pro Consumidor — Consumer Prices Data Discovery & Profiling](../profiling/proconsumidor/README.md)
+- [Ministry of Agriculture — Agricultural Prices Data Discovery & Profiling](../profiling/agriculture/README.md)
 ### Databricks Lakehouse Infrastructure Status
 
 **Environment:** Databricks Free Edition  
@@ -76,6 +77,26 @@ The following infrastructure components have been successfully verified:
 **GitHub implementation:** [Databricks Setup Notebooks](../src/setup/)
 
 **Important:** Infrastructure validation confirms that the catalog, schemas, volumes, and landing directories exist. It does not confirm that source datasets have been ingested or that Bronze, Silver, and Gold pipelines are operational.
+
+### Bronze Layer Status
+
+**Implementation status:** First Bronze pipeline implemented and verified in development.
+
+| Pipeline | Target table | Result |
+|---|---|---|
+| [01_BCRD_Exchange_Rates_Bronze](../src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) | `rd_economic_intelligence.bronze.bcrd_exchange_rates_daily` | 1,253 rows loaded (2021-09-20 to 2026-09-18); row count matches source; all observational quality checks passed (no invalid or duplicate dates, no null or non-positive rates, no buy rate above sell rate) |
+
+Design rules applied:
+
+- Source values are preserved; only column names are converted to Delta-safe snake_case, with the mapping documented in the notebook.
+- Every row carries lineage metadata: source file, path, sheet, source row number, file size and modification time, report period, batch ID and ingestion timestamp.
+- A structural contract stops the load if the BCRD file layout changes.
+- Data-quality checks are observational in Bronze: they report and never filter.
+- Re-runs are idempotent per source file: previously loaded rows from the same file are replaced, not duplicated.
+
+**Technical finding:** Databricks Free Edition serverless compute does not include `openpyxl`, which pandas requires to read `.xlsx` files. Every Excel-based ingestion notebook installs a pinned version (`openpyxl==3.1.5`) in its first code cell.
+
+**Important:** This is a development implementation, not a production pipeline. Orchestration (Lakeflow Jobs), incremental loading and the Silver and Gold layers are still pending.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -399,8 +420,8 @@ The source-discovery sequence follows business priority and source readiness:
 02. BCRD — CPI and Family Basket datasets [initial profiling completed]
 03. BCRD — Monetary Policy Rate [pending source-file profiling]
 04. MICM — Dominican Fuel Prices [reconciliation in progress]
-05. Pro Consumidor — Consumer / Basic Basket Prices [next]
-06. Ministry of Agriculture — Agricultural Prices [pending]
+05. Pro Consumidor — Consumer / Basic Basket Prices [initial profiling completed; validation in progress]
+06. Ministry of Agriculture — Agricultural Prices [preliminary profiling and reconciliation completed]
 07. EIA — WTI / Brent external oil driver [pending]
 ```
 
@@ -647,7 +668,7 @@ The MICM dataset is **not production approved**. The existence of source files o
 
 **GitHub policy:** commit source profiling notes, mappings, tests and code; preserve original source files outside the public repository until the data publication and repository policy is reviewed.
 
-**Implementation gate:** do not create Databricks catalogs, tables, notebooks or workflows until source profiling, data dictionary, source-to-target mapping and solution architecture have been reviewed.
+**Implementation gate:** pipelines are built source by source. A source enters Bronze development only after its profiling is complete (BCRD USD/DOP is the first). Production approval of any pipeline still requires the data dictionary, source-to-target mapping and solution architecture to be reviewed.
 
 ---
 
@@ -656,9 +677,9 @@ The MICM dataset is **not production approved**. The existence of source files o
 ```text
 Business Discovery       ██████████  COMPLETE
 Source Assessment        ██████████  COMPLETE
-Data Profiling           ████░░░░░░  IN PROGRESS (illustrative)
+Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
-Databricks Engineering   ░░░░░░░░░░  PLANNED
+Databricks Engineering   ██░░░░░░░░  IN PROGRESS (setup + first Bronze pipeline)
 Analytics & BI           ░░░░░░░░░░  PLANNED
 ```
 

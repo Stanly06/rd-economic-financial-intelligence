@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. Phase 2, Data Discovery & Profiling.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. Bronze/Silver/Gold pipelines will be built after profiling, data dictionary and source-to-target mapping are reviewed.
+> **Status: in progress. Phase 2, Data Discovery & Profiling, with first Bronze ingestion in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. The first Bronze pipeline (BCRD USD/DOP) is implemented and verified in development; the remaining Bronze/Silver/Gold pipelines will be built as each source's profiling, data dictionary and source-to-target mapping are reviewed.
 
 ---
 
@@ -45,6 +45,9 @@ The platform only includes Dominican data. International data is allowed only as
 - Schemas `bronze`, `silver`, `gold`, `metadata` and `quality`.
 - Raw landing Volumes per source (`bcrd_raw`, `micm_raw`, `proconsumidor_raw`, `agriculture_raw`) with folders per dataset.
 
+**Bronze ingestion** (in [`src/bronze/`](src/bronze/), development)
+- [`01_BCRD_Exchange_Rates_Bronze`](src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) loads the official BCRD daily USD/DOP file into `bronze.bcrd_exchange_rates_daily`: 1,253 rows (2021-09-20 to 2026-09-18), source values preserved, lineage metadata per row (file, sheet, source row, batch ID, ingestion timestamp), structural contract check, observational data-quality checks and idempotent re-runs. All quality checks passed on the first load.
+
 ## Target architecture
 
 ```mermaid
@@ -66,7 +69,7 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | Planned |
+| Bronze / Silver / Gold pipelines + Jobs | In progress (first Bronze pipeline: BCRD USD/DOP) |
 | Databricks SQL, dashboard and Power BI | Planned |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.
