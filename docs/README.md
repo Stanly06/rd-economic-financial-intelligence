@@ -190,14 +190,15 @@ Design decisions:
 
 | Layer | Notebook | Output | Result |
 |---|---|---|---|
-| Landing | [06_MEM_Electricity_Download](../src/bronze/06_MEM_Electricity_Download.ipynb) | `bronze.mem_raw/ede_performance/` | Newest annex found through the MEM website media index; skipped when already landed (same name or same content hash); structure validated before writing |
-| Bronze | [06_MEM_Electricity_Bronze](../src/bronze/06_MEM_Electricity_Bronze.ipynb) | `bronze.mem_electricity_raw_rows` | 182 + 39 sheet rows from the July 2026 annex |
+| Landing | [06_MEM_Electricity_Download](../src/bronze/06_MEM_Electricity_Download.ipynb) | `bronze.mem_raw/ede_performance/` | Newest annex found through the MEM website media index; skipped when the same content hash is already archived; structure validated; written to an append-only archive `ede_performance/<yyyy>/<mm>/` (corrected republications kept as `<name>__<date>.xlsx`) |
+| Bronze | [06_MEM_Electricity_Bronze](../src/bronze/06_MEM_Electricity_Bronze.ipynb) | `bronze.mem_annex_files`, `bronze.mem_electricity_raw_rows` | Auto Loader registers each new archive file once; 182 + 39 sheet rows per annex snapshot (July 2026). Verified: a rerun captures nothing, and a second file is captured alone as a new snapshot |
 | Silver | [06_MEM_Electricity_Silver](../src/silver/06_MEM_Electricity_Silver.ipynb) | `silver.mem_ede_monthly`, `silver.mem_tariffs_quarterly` | 35,446 monthly values (2009–Jul 2026); 4,430 tariff values (29 periods, 2020–Sep 2026); all enforced rules passed |
 | Gold | [06_MEM_Electricity_Gold](../src/gold/06_MEM_Electricity_Gold.ipynb) | `gold.electricity_metrics`, `gold.electricity_tariff_monthly`, `gold.electricity_bts1_bill` | 316 / 6,822 / 486 rows, ENE-001 to ENE-009, January 2020 to July 2026 |
 
 Design decisions:
 
-- **Source choice:** SIE tariff resolutions are scanned PDFs; the MEM monthly PDF report has text but one month per file. The MEM **annex workbook** has the full monthly history and the tariff table in machine-readable form, so it is the primary source. The latest annex replaces the previous one (each carries all history).
+- **Source choice:** SIE tariff resolutions are scanned PDFs; the MEM monthly PDF report has text but one month per file. The MEM **annex workbook** has the full monthly history and the tariff table in machine-readable form, so it is the primary source. Each annex carries all history, so Silver and Gold are rebuilt from the newest snapshot; older snapshots stay in Bronze to audit revisions.
+- **Incremental ingestion:** Auto Loader (`cloudFiles` with `binaryFile`, because Excel is not a native Auto Loader format) tracks processed files in a checkpoint (`mem_raw/_checkpoints/ede_performance_files/`) and runs with `trigger(availableNow=True)` on serverless, so a Job run processes only files not seen before and stops. The workbook itself is then parsed with openpyxl. Bronze capture compares the file register with Bronze, so a run that fails after registering a file is completed by the next run.
 - **Reconciliation:** average selling price matches the MEM PDF report for May 2026 (Edenorte RD$10.13/kWh, Edesur RD$10.51/kWh), enforced in Gold.
 - **Tariff periods** are expanded to months; the overlapping periods `abr - may 26` and `abr - jun 26` resolve to the later column. Before October 2021 the applied tariff is one value for all distributors.
 - **Reference vs applied tariff** gap is reported as a subsidy proxy, not as an official subsidy figure.

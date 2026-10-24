@@ -24,7 +24,7 @@
   "tasks": [
     {
       "task_key": "download_mem_annex",
-      "description": "Download the newest MEM Informe de Desempeño annex into the mem_raw Volume (skips if already landed)",
+      "description": "Download the newest MEM Informe de Desempeño annex into the append-only mem_raw archive (skips content already archived)",
       "notebook_task": {
         "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
         "source": "WORKSPACE"
@@ -49,7 +49,7 @@
     },
     {
       "task_key": "bronze_mem_electricity",
-      "description": "Capture the annex sheets into bronze.mem_electricity_raw_rows",
+      "description": "Auto Loader: register new annex files and capture their sheets into bronze.mem_electricity_raw_rows (one snapshot per file)",
       "notebook_task": {
         "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Bronze",
         "source": "WORKSPACE"

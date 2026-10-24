@@ -28,6 +28,6 @@
 
 ## Automatic acquisition
 
-The MEM website exposes its uploads through the WordPress REST API (`https://mem.gob.do/wp-json/wp/v2/media?search=Anexos`). `06_MEM_Electricity_Download` picks the newest `.xlsx` whose name contains `Desempeno` and `Anexos`, skips it if already landed, validates the required sheets and writes it unchanged to the Volume. File names vary month to month (`-vf`, `._-`), so selection is by publication date, not by name pattern.
+The MEM website exposes its uploads through the WordPress REST API (`https://mem.gob.do/wp-json/wp/v2/media?search=Anexos`). `06_MEM_Electricity_Download` picks the newest `.xlsx` whose name contains `Desempeno` and `Anexos`, skips it when the same content (SHA-256) is already archived, validates the required sheets and writes it unchanged to an append-only archive, one folder per arrival month (`ede_performance/<yyyy>/<mm>/`). A republished file whose name is already archived but whose content changed is kept as a new version (`<name>__<yyyy-mm-dd>.xlsx`). File names vary month to month (`-vf`, `._-`), so selection is by publication date, not by name pattern.
 
-Do not commit the original workbook; it is kept in the Volume `bronze.mem_raw/ede_performance/`.
+Do not commit the original workbook; it is kept in the Volume `bronze.mem_raw/ede_performance/`. Files are never overwritten or deleted there: the Volume, not Delta time travel, is the long-term archive of what MEM published.
