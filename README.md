@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. BCRD, MICM and Pro Consumidor sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), orchestrated by one Lakeflow Job. Agriculture and electricity are next; electricity has no validated source yet.
+> **Status: in progress. BCRD, MICM and Pro Consumidor sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), orchestrated by one Lakeflow Job. Agriculture and electricity are next. For electricity, official sources are identified (MEM monthly distributor performance reports and SIE quarterly tariff resolutions) but none is published as a downloadable dataset.
 
 ---
 
@@ -94,7 +94,7 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM and Pro Consumidor complete + Job; Agriculture pending; electricity has no source yet) |
+| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM and Pro Consumidor complete + Job; Agriculture pending; electricity sources identified, pipeline pending) |
 | Databricks SQL, dashboard and Power BI | In progress (Power BI report: 6 pages on FX, inflation, cost of living, fuel and consumer prices) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.

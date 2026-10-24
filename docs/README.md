@@ -54,7 +54,7 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 | EIA — WTI / Brent | Not started | External driver only under RD-First governance |
 
 **Current phase:** Data Discovery & Profiling  
-**Next milestone:** Build the Ministry of Agriculture pipelines, find a validated electricity-tariff source, obtain more Pro Consumidor history, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target_Mapping`.
+**Next milestone:** Build the Ministry of Agriculture pipelines, build the electricity series from the MEM monthly reports (sources assessed below), obtain more Pro Consumidor history, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target_Mapping`.
 
 **Technical documentation:**
 - [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
@@ -749,7 +749,10 @@ Analytics
 The immediate priorities are:
 
 1. Obtain earlier Pro Consumidor reports to enable CON-006 to CON-008, and geographic detail for CON-009.
-2. Identify a validated electricity-tariff source (e.g. the electricity regulator) for BQ-010.
+2. Electricity (BQ-010): sources assessed on 2026-10-24.
+   - **MEM — Informe de Desempeño de las EDE** (monthly PDF with extractable text): average selling price (DOP/kWh) and purchase price (cUSD/kWh) by distributor, losses, collection. Example, May 2026: Edenorte DOP 10.13/kWh, Edesur DOP 10.51/kWh (Edeeste not in the extracted text). Recommended primary source; one file per month.
+   - **SIE — quarterly tariff resolutions** (e.g. SIE-079-2026-TF, July–September 2026): tariffs by block for regulated customers, published as scanned PDFs (no machine-readable text); usable only as a manually transcribed reference table.
+   - No CSV/XLSX dataset found on the open-data portal.
 3. Assess Ministry of Agriculture agricultural-price datasets.
 4. Profile the BCRD monetary policy rate source and verify incremental extraction options for BCRD data.
 5. Consolidate source schemas, candidate business keys, quality rules, methodology notes, and KPI traceability as inputs to `05_Data_Dictionary`.

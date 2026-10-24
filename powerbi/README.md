@@ -58,6 +58,10 @@ Modeling rules:
 - Edit interactions: the group and region bars (Inflation page) and the quintile and region bars (Cost of Living page) do not filter each other.
 - FX 52-week values start in September 2022 and YTD values in 2022 by design (KPI decision D4); selecting an earlier month shows them blank.
 
+## Report theme
+
+[`rd_intelligence_theme.json`](rd_intelligence_theme.json) (View → Themes → Browse for themes): navy `#0B3C7D` and red `#CE1126` from the Dominican flag, teal and amber accents, light page background, white rounded visuals with soft shadow, navy table headers. Each page has a full-width navy header (title + source) and descriptive visual titles.
+
 ## 3. Report pages
 
 ### Page 1 — Foreign Exchange (USD/DOP)

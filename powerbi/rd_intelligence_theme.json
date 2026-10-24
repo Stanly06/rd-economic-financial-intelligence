@@ -1,0 +1,52 @@
+{
+  "name": "RD Intelligence",
+  "dataColors": ["#0B3C7D", "#CE1126", "#1A8A7A", "#E8A33D", "#6B4FA0", "#3E8ED0", "#9C2C3F", "#5B6B7F", "#8DB580", "#D9704A"],
+  "foreground": "#14213D",
+  "foregroundNeutralSecondary": "#5B6B7F",
+  "foregroundNeutralTertiary": "#8A97A8",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F4F6FA",
+  "backgroundNeutral": "#E3E8F0",
+  "tableAccent": "#0B3C7D",
+  "good": "#1A8A7A",
+  "neutral": "#E8A33D",
+  "bad": "#CE1126",
+  "maximum": "#0B3C7D",
+  "center": "#E3E8F0",
+  "minimum": "#CE1126",
+  "textClasses": {
+    "title": { "fontFace": "Segoe UI Semibold", "fontSize": 13, "color": "#14213D" },
+    "header": { "fontFace": "Segoe UI Semibold", "fontSize": 12, "color": "#14213D" },
+    "label": { "fontFace": "Segoe UI", "fontSize": 10, "color": "#5B6B7F" },
+    "callout": { "fontFace": "Segoe UI Semibold", "fontSize": 26, "color": "#0B3C7D" }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#F4F6FA" } }, "transparency": 0 }],
+        "outspace": [{ "color": { "solid": { "color": "#E3E8F0" } } }]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "border": [{ "show": true, "color": { "solid": { "color": "#E3E8F0" } }, "radius": 8 }],
+        "dropShadow": [{ "show": true, "preset": "Custom", "color": { "solid": { "color": "#14213D" } }, "transparency": 90, "shadowBlur": 6, "shadowDistance": 2, "angle": 90, "position": "Outer" }],
+        "visualHeader": [{ "show": true }]
+      }
+    },
+    "tableEx": {
+      "*": {
+        "columnHeaders": [{ "fontColor": { "solid": { "color": "#FFFFFF" } }, "backColor": { "solid": { "color": "#0B3C7D" } }, "bold": true }],
+        "values": [{ "backColorSecondary": { "solid": { "color": "#F4F6FA" } } }]
+      }
+    },
+    "textbox": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#0B3C7D" } }, "transparency": 0 }],
+        "border": [{ "show": false }],
+        "dropShadow": [{ "show": false }]
+      }
+    }
+  }
+}
