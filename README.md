@@ -4,6 +4,8 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
+> **Live web platform (ES/EN): https://stanly06.github.io/rd-intelligence/** — built from the Gold tables by [`web/`](web/README.md).
+
 > **Status: in progress. All six sources (BCRD FX, BCRD CPI, MICM, Pro Consumidor, MEM electricity and Ministry of Agriculture) run end to end in development, with automatic download and incremental ingestion.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), and electricity (ENE) comes from the MEM monthly distributor report annex, agricultural market prices (AGR) come from the Ministry of Agriculture weekly reports, all orchestrated by one Lakeflow Job.
 
 ---

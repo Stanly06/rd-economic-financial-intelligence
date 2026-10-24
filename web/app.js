@@ -1,0 +1,563 @@
+/* RD Intelligence Platform · web version (ES / EN). Every figure comes from the project's Gold/Silver tables (see REAL.generated). */
+
+/* ===================== LANGUAGE ===================== */
+const qsLang = new URLSearchParams(location.search).get("lang");
+let LANG = (() => { if (qsLang === "en" || qsLang === "es") return qsLang;
+  try { return localStorage.getItem("rdip.lang") || localStorage.getItem("sf-lang") || ((navigator.language||"").toLowerCase().startsWith("es") ? "es" : "en"); } catch(e){ return "es"; } })();
+const tr = (es, en) => LANG === "en" ? en : es;
+const STATIC = {
+  collapse:["Plegar menú","Collapse menu"], byline:["Proyecto de portafolio · Stanly Fernández","Portfolio project · Stanly Fernández"],
+  platform:["Plataforma","Platform"], theme:["Tema","Theme"], themeAuto:["Automático","Automatic"], themeDom:["Dominicana Institucional","Dominican Institutional"],
+  repo:["Repositorio","Repository"], portfolio:["Portafolio","Portfolio"]
+};
+const NAMES = { // data labels published in Spanish by the sources
+  "Alimentos y Bebidas no Alcohólicas":"Food & non-alcoholic beverages","Bebidas Alcohólicas y Tabaco":"Alcoholic beverages & tobacco",
+  "Bienes y Servicios Diversos":"Miscellaneous goods & services","Comunicaciones":"Communications","Educación":"Education","Muebles":"Furnishings & household",
+  "Prendas de Vestir y Calzado":"Clothing & footwear","Recreación y Cultura":"Recreation & culture","Restaurantes y Hoteles":"Restaurants & hotels",
+  "Salud":"Health","Transporte":"Transport","Vivienda":"Housing","Norte o Cibao":"North (Cibao)","Este":"East","Sur":"South","Ozama":"Ozama",
+  "Nacional":"National","Quintil 1":"Quintile 1","Quintil 2":"Quintile 2","Quintil 3":"Quintile 3","Quintil 4":"Quintile 4","Quintil 5":"Quintile 5",
+  "Gasolina premium":"Premium gasoline","Gasolina regular":"Regular gasoline","Gasoil óptimo":"Premium diesel (óptimo)","Gasoil regular":"Regular diesel","GLP":"LPG",
+  "almacenes":"warehouses","colmados":"colmados (corner stores)","mercados":"markets","supermercados grandes":"large supermarkets","supermercados pequeños":"small supermarkets",
+  "Avícolas":"Poultry & eggs","Cereales":"Cereals","Frutas":"Fruits","Legumbres y hortalizas":"Vegetables","Leguminosas secas":"Dry legumes","Lácteos":"Dairy",
+  "Musáceas":"Plantains & bananas","Oleaginosas":"Oilseeds","Pecuarios":"Meat & livestock","Raíces y tubérculos":"Roots & tubers",
+  "Promedio mercados":"Average of markets","Mayorista":"Wholesale","Total EDE":"Total distributors (EDE)"
+};
+const nm = s => LANG === "en" && NAMES[s] ? NAMES[s] : (s === "National CPI" ? tr("IPC general","Headline CPI") : s === "Core CPI" ? tr("IPC subyacente","Core CPI") : s);
+
+/* ===================== HELPERS ===================== */
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const MES = { es:["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"], en:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] };
+const fmtMonth = m => { const [y,mm] = m.split('-'); return `${MES[LANG][+mm-1]} ${y}`; };
+const fmtDate = d => { const [y,m,dd] = d.split('-'); return LANG==="en" ? `${MES.en[+m-1]} ${+dd}, ${y}` : `${+dd} ${MES.es[+m-1]} ${y}`; };
+const nf = (v,d=2) => v == null || isNaN(v) ? "—" : v.toLocaleString(LANG==="en"?"en-US":"es-DO",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v,d=2) => v == null || isNaN(v) ? "—" : `${v>0?"+":""}${nf(v,d)} %`;
+const pp = (v,d=2) => v == null || isNaN(v) ? "—" : `${v>0?"+":""}${nf(v,d)} pp`;
+const dir = v => v == null ? "" : v > 0.0001 ? "up" : v < -0.0001 ? "down" : "flat";
+const cpiSeries = (t,n) => REAL.cpi.find(s => s.t === t && (!n || s.n === n));
+const colSeg = (t,n) => REAL.col.find(s => s.t === t && (!n || s.n === n));
+const lastN = (arr,n) => n ? arr.slice(-n) : arr;
+const yoyIdx = (dates, i) => { const t = new Date(dates[i]).getTime() - 364*864e5; let k = -1; dates.forEach((d,j) => { const x = new Date(d).getTime(); if (x <= t && t - x <= 7*864e5) k = j; }); return k; };
+const ICON = {
+  home:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+  pct:'<circle cx="12" cy="12" r="9"/><path d="M8 16l8-8"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="15" r="1"/>',
+  fx:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+  bag:'<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/>',
+  cart:'<path d="M3 4h2l2.4 11h10.2L20 7H6.2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
+  fuel:'<path d="M4 20V5a1 1 0 011-1h8a1 1 0 011 1v15M3 20h12M14 9h2a2 2 0 012 2v5a1.5 1.5 0 003 0V8l-3-3"/><path d="M7 8h4"/>',
+  bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  sprout:'<path d="M12 21v-8"/><path d="M12 13c0-4-3-7-8-7 0 4 3 7 8 7z"/><path d="M12 13c0-3 2-6 7-6 0 3-2 6-7 6z"/>',
+  book:'<path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/>',
+  bank:'<path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+  link:'<path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h5"/>'
+};
+const icon = (k,cls="") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
+function spark(values, colorVar="--primary"){
+  const v = values.filter(x => x != null); if (v.length < 2) return "";
+  const min = Math.min(...v), max = Math.max(...v), w = 200, h = 34, step = w/(v.length-1);
+  const pts = v.map((x,i) => `${(i*step).toFixed(1)},${(h-3-(max===min?.5:(x-min)/(max-min))*(h-6)).toFixed(1)}`).join(" ");
+  const last = pts.split(" ").pop().split(",");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(${colorVar})" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${last[0]}" cy="${last[1]}" r="3" fill="var(${colorVar})"/></svg>`;
+}
+function kpi({icon:ic,label,value,sub,delta,deltaText,tag,sparkVals,sparkVar}){
+  return `<article class="kpi"><span class="k-tag">${tag||""}</span>
+    <div class="k-head">${icon(ic)}<span>${label}</span></div>
+    <div class="k-val">${value}</div><div class="k-sub">${sub||""}</div>
+    ${deltaText?`<div class="k-delta ${dir(delta)}">${deltaText}</div>`:""}
+    ${sparkVals?spark(sparkVals,sparkVar):""}</article>`;
+}
+function table(cols, rows){
+  const body = rows.length ? rows.map(r => `<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${cols.length}">${tr("Sin datos para esta selección.","No data for this selection.")}</td></tr>`;
+  return `<div class="table-wrap tbl-scroll"><table><thead><tr>${cols.map(c=>`<th scope="col">${c}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function copyCsv(cols, rows, name){
+  const esc = v => `"${String(v).replace(/<[^>]+>/g,"").replace(/"/g,'""')}"`;
+  const text = [cols.map(esc).join(",")].concat(rows.map(r => r.map(esc).join(","))).join("\n");
+  navigator.clipboard.writeText(text).then(()=>toast(tr(`CSV de ${name} copiado (${rows.length} filas)`,`${name} CSV copied (${rows.length} rows)`))).catch(()=>toast(tr("No se pudo copiar automáticamente","Could not copy automatically")));
+}
+const SRC = {
+  bcrd:{n:"Banco Central de la República Dominicana",en:"Central Bank of the Dominican Republic",u:"https://www.bancentral.gov.do/",i:"bank"},
+  micm:{n:"Ministerio de Industria, Comercio y Mipymes",en:"Ministry of Industry, Commerce and MSMEs",u:"https://micm.gob.do/",i:"fuel"},
+  pc:{n:"Pro Consumidor",en:"Pro Consumidor (consumer protection agency)",u:"https://proconsumidor.gob.do/",i:"bag"},
+  mem:{n:"Ministerio de Energía y Minas",en:"Ministry of Energy and Mines",u:"https://mem.gob.do/",i:"bolt"},
+  ma:{n:"Ministerio de Agricultura",en:"Ministry of Agriculture",u:"https://agricultura.gob.do/",i:"sprout"},
+  portal:{n:"Portal de datos abiertos (datos.gob.do)",en:"Open-data portal (datos.gob.do)",u:"https://datos.gob.do/",i:"book"}
+};
+const srcChip = k => `<a class="src-chip" href="${SRC[k].u}" target="_blank" rel="noreferrer">${icon(SRC[k].i)}${tr("Fuente: ","Source: ")}${LANG==="en"?SRC[k].en:SRC[k].n}</a>`;
+
+/* ===================== CHARTS ===================== */
+let charts = [];
+function destroyCharts(){ charts.forEach(c=>c.destroy()); charts = []; }
+function chartDefaults(){ Chart.defaults.font.family = css("--font-body"); Chart.defaults.color = css("--muted"); Chart.defaults.borderColor = css("--grid"); }
+function lineChart(el, labels, datasets, {yFmt = v=>nf(v,2), yTitle="", stepped=false, zero=false}={}){
+  const c = new Chart(document.getElementById(el), { type:"line",
+    data:{ labels, datasets: datasets.map((d,i)=>({ label:d.label, data:d.data, borderColor:css(d.color), backgroundColor:css(d.color)+"22",
+      borderWidth:d.width||2, pointRadius:labels.length>60?0:2.5, pointHoverRadius:4, pointStyle:["circle","rectRot","triangle","rect","star","crossRot"][i%6],
+      borderDash:d.dash||[], fill:d.fill||false, tension:.25, stepped, spanGaps:true, segment:d.segment })) },
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:"index",intersect:false},
+      plugins:{ legend:{labels:{usePointStyle:true,boxWidth:8}}, tooltip:{callbacks:{ label: t => `${t.dataset.label}: ${yFmt(t.parsed.y)}` }} },
+      scales:{ x:{ticks:{maxTicksLimit:9,autoSkip:true,maxRotation:0}, grid:{display:false}}, y:{beginAtZero:zero, title:{display:!!yTitle,text:yTitle}, ticks:{callback:v=>yFmt(v)}} } } });
+  charts.push(c); return c;
+}
+function barChart(el, labels, datasets, {yFmt=v=>nf(v,2), horizontal=false, yTitle=""}={}){
+  const c = new Chart(document.getElementById(el), { type:"bar",
+    data:{ labels, datasets: datasets.map(d=>({ label:d.label, data:d.data, backgroundColor: d.colors || css(d.color), borderRadius:4, maxBarThickness:28 })) },
+    options:{ indexAxis: horizontal?"y":"x", responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:datasets.length>1}, tooltip:{callbacks:{label:t=>`${t.dataset.label}: ${yFmt(horizontal?t.parsed.x:t.parsed.y)}`}} },
+      scales:{ x:{grid:{display:!horizontal?false:true}, ticks:horizontal?{callback:v=>yFmt(v)}:{maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+               y:{grid:{display:horizontal?false:true}, title:{display:!!yTitle,text:yTitle}, ticks:horizontal?{}:{callback:v=>yFmt(v)}} } } });
+  charts.push(c); return c;
+}
+const real = () => `<span class="status real">${tr("Real","Real")}</span>`;
+
+/* ===================== PAGES ===================== */
+const state = { page:"panorama", f:{} };
+const PAGES = [
+  { id:"panorama", icon:"home", src:["bcrd","micm","ma"], label:["Panorama económico","Economic overview"], lead:["Indicadores clave de la República Dominicana en una sola vista, con datos oficiales.","Key Dominican Republic indicators in one view, from official data."], render:renderPanorama },
+  { id:"inflacion", icon:"pct", src:["bcrd"], label:["Inflación e IPC","Inflation & CPI"], lead:["Índice de Precios al Consumidor: inflación mensual, interanual y acumulada, por grupo de gasto y región.","Consumer Price Index: monthly, year-over-year and year-to-date inflation, by expenditure group and region."], render:renderInflacion },
+  { id:"cambiario", icon:"fx", src:["bcrd"], label:["Mercado cambiario","Exchange rate"], lead:["Tasa de referencia USD/DOP del BCRD, compra y venta, desde 1991.","BCRD USD/DOP reference rate, buy and sell, since 1991."], render:renderCambiario },
+  { id:"canasta", icon:"cart", src:["bcrd"], label:["Canasta familiar","Family basket"], lead:["Costo mensual de la canasta familiar del BCRD por quintil de ingreso y región.","Monthly cost of the BCRD family basket by income quintile and region."], render:renderCanasta },
+  { id:"combustibles", icon:"fuel", src:["micm"], label:["Combustibles","Fuel prices"], lead:["Precios oficiales semanales del MICM por tipo de combustible, con variación semanal e interanual.","Official weekly MICM prices by fuel type, with weekly and year-over-year change."], render:renderCombustibles },
+  { id:"consumidor", icon:"bag", src:["pc"], label:["Precios al consumidor","Consumer prices"], lead:["Precios de productos de primera necesidad por segmento de venta (Pro Consumidor).","Prices of basic goods by retail segment (Pro Consumidor)."], render:renderConsumidor },
+  { id:"electricidad", icon:"bolt", src:["mem"], label:["Electricidad","Electricity"], lead:["Precio medio de venta de las distribuidoras, pérdidas, cobranza y tarifas reguladas (BTS-1), desde 2020.","Distributors' average selling price, losses, collection and regulated tariffs (BTS-1), since 2020."], render:renderElectricidad },
+  { id:"agro", icon:"sprout", src:["ma","portal"], label:["Precios agropecuarios","Agricultural prices"], lead:["Precios semanales del Ministerio de Agricultura por grupo de productos, producto y mercado, minorista y mayorista, desde 2017.","Ministry of Agriculture weekly prices by product group, product and market, retail and wholesale, since 2017."], render:renderAgro },
+  { id:"fuentes", icon:"book", src:["portal"], label:["Fuentes y metodología","Sources & methodology"], lead:["Indicadores, cobertura, calidad de datos y arquitectura del proyecto.","Indicators, coverage, data quality and project architecture."], render:renderFuentes, sep:true },
+];
+const L = p => tr(p.label[0], p.label[1]);
+
+function navigate(id, focus){
+  const p = PAGES.find(x=>x.id===id) || PAGES[0]; state.page = p.id;
+  document.querySelectorAll("#nav button").forEach(b=>b.setAttribute("aria-current", b.dataset.id===p.id?"page":"false"));
+  $("#crumbPage").textContent = L(p); $("#pageTitle").textContent = L(p); $("#pageLead").textContent = tr(p.lead[0], p.lead[1]);
+  $("#pageBadges").innerHTML = `<span class="badge real">✓ ${tr("Datos oficiales","Official data")}</span>` + p.src.map(srcChip).join("");
+  try{ localStorage.setItem("rdip.page", p.id); }catch(e){}
+  if (location.hash.slice(1) !== p.id) history.replaceState(null,"",location.pathname+location.search+"#"+p.id);
+  $("#app").classList.remove("menu-open");
+  draw(); if (focus) $("#content").focus({preventScroll:true});
+}
+function draw(){ destroyCharts(); chartDefaults(); const p = PAGES.find(x=>x.id===state.page); const el = $("#content"); el.innerHTML=""; el.classList.remove("fade"); void el.offsetWidth; el.classList.add("fade"); p.render(el); el.insertAdjacentHTML("beforeend", footer()); }
+function footer(){ return `<div class="footer"><span><svg viewBox="0 0 30 20"><use href="#flag"/></svg>RD Intelligence Platform · ${tr("Proyecto de portafolio de","Portfolio project by")} <a href="https://stanly06.github.io/" style="color:inherit">Stanly Fernández</a></span><span>${tr("Fuentes","Sources")}: BCRD · MICM · Pro Consumidor · MEM · ${tr("Ministerio de Agricultura","Ministry of Agriculture")} · ${tr("Datos actualizados","Data updated")} ${fmtDate(REAL.generated.slice(0,10))}</span></div>`; }
+function filterBar(html, pageId){ return `<form class="filters" onsubmit="return false" aria-label="${tr("Filtros","Filters")}">${html}<span class="spacer"></span><button class="btn" type="button" data-reset="${pageId}">${tr("Restablecer filtros","Reset filters")}</button></form>`; }
+function sel(id,label,opts,val){ return `<label for="${id}">${label}<select id="${id}">${opts.map(([v,t])=>`<option value="${v}" ${String(v)===String(val)?"selected":""}>${t}</option>`).join("")}</select></label>`; }
+function bindFilters(defaults){
+  document.querySelectorAll(".filters select").forEach(s => s.addEventListener("change", () => { state.f[s.id] = s.value; draw(); }));
+  document.querySelectorAll("[data-reset]").forEach(b => b.addEventListener("click", () => { Object.keys(defaults).forEach(k=>delete state.f[k]); draw(); toast(tr("Filtros restablecidos","Filters reset")); }));
+}
+const F = (k,def) => state.f[k] ?? def;
+function bindCopy(id, cols, rows, name){ const b=document.getElementById(id); if(b) b.addEventListener("click",()=>copyCsv(cols,rows,name)); }
+const csvBtn = id => `<button class="btn" id="${id}" type="button">${tr("Copiar CSV","Copy CSV")}</button>`;
+function addMonths(d, k){ const dt = new Date(d+"T00:00:00Z"); dt.setUTCMonth(dt.getUTCMonth()+k); return dt.toISOString().slice(0,10); }
+function lastIndexBefore(arr, d){ let i = arr.findIndex(x => x >= d); return Math.max(0, i-1); }
+
+/* ---------- agriculture helpers ---------- */
+const AG = (() => {
+  const A = REAL.agri, mk = n => A.markets.indexOf(n);
+  const ALL = mk("Promedio mercados"), WH = mk("Mayorista");
+  const byKey = {}; A.s.forEach(s => { (byKey[s[2]+"|"+s[3]] ||= {})[s[1]] = s; });
+  const retailMarkets = A.markets.map((n,i)=>[n,i]).filter(([n,i]) => i!==ALL && i!==WH);
+  const rub = (c, r) => A.rub.find(x => x.c === c && x.r === r);
+  return { A, ALL, WH, byKey, retailMarkets, rub };
+})();
+
+/* ---------- 1. Panorama ---------- */
+function renderPanorama(el){
+  const hl = cpiSeries("headline"), n = hl.m.length-1, core = cpiSeries("core");
+  const fx = REAL.fx, fn = fx.d.length-1;
+  const nat = colSeg("national"), cn = nat.m.length-1;
+  const prem = REAL.fuel.f[0], pn = prem.values.length-1;
+  const fxMonthAgoIdx = Math.max(0, fx.d.findIndex(d => d >= addMonths(fx.d[fn],-1)));
+  const fxM = (fx.s[fn]/fx.s[fxMonthAgoIdx]-1)*100;
+  const A = AG.A, am = A.m.length-1;
+  const ag = A.s.filter(s => s[0]===0 && s[1]===AG.ALL && s[5][am]!=null && s[5][am-1]!=null).map(s => (s[5][am]/s[5][am-1]-1)*100);
+  const agAvg = ag.reduce((a,b)=>a+b,0)/ag.length, agUp = ag.filter(v=>v>0).length;
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"pct",label:tr("Inflación interanual","Year-over-year inflation"),value:`${nf(hl.yo[n])} %`,sub:fmtMonth(hl.m[n]),delta:hl.yo[n]-hl.yo[n-1],deltaText:`${pp(hl.yo[n]-hl.yo[n-1])} ${tr("vs. mes anterior","vs. previous month")}`,tag:"BCRD",sparkVals:lastN(hl.yo,12)})}
+    ${kpi({icon:"fx",label:tr("Tasa USD/DOP · venta","USD/DOP rate · sell"),value:`RD$${nf(fx.s[fn],2)}`,sub:fmtDate(fx.d[fn]),delta:fxM,deltaText:`${pct(fxM)} ${tr("en un mes (↑ = depreciación)","in one month (↑ = peso depreciation)")}`,tag:"BCRD",sparkVals:lastN(fx.s,120),sparkVar:"--s2"})}
+    ${kpi({icon:"cart",label:tr("Canasta familiar nacional","National family basket"),value:`RD$${nf(nat.c[cn],0)}`,sub:`${fmtMonth(nat.m[cn])} · ${tr("mensual","per month")}`,delta:nat.y[cn],deltaText:`${pct(nat.y[cn])} ${tr("interanual","year over year")}`,tag:"BCRD",sparkVals:lastN(nat.c,12),sparkVar:"--s3"})}
+    ${kpi({icon:"fuel",label:nm("Gasolina premium"),value:`RD$${nf(prem.values[pn])}`,sub:`${tr("Por galón · semana","Per gallon · week of")} ${fmtDate(REAL.fuel.w[pn])}`,delta:prem.values[pn]-prem.values[pn-1],deltaText:prem.values[pn]===prem.values[pn-1]?tr("Sin cambio semanal","No weekly change"):pct((prem.values[pn]/prem.values[pn-1]-1)*100),tag:"MICM",sparkVals:lastN(prem.values,26),sparkVar:"--s5"})}
+    ${kpi({icon:"sprout",label:tr("Precios agropecuarios minoristas","Retail agricultural prices"),value:pct(agAvg),sub:`${tr("Variación mensual promedio","Average monthly change")} · ${fmtMonth(A.m[am])}`,delta:agAvg,deltaText:`${agUp} ${tr("de","of")} ${ag.length} ${tr("productos suben","products up")}`,tag:tr("Min. Agricultura","Min. of Agriculture")})}
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Evolución de la inflación","Inflation trend")}</h2><p class="p-sub">${tr("Variación interanual (%) · últimos 24 meses · general y subyacente","Year-over-year change (%) · last 24 months · headline and core")}</p></div>${real()}</div><div class="chart"><canvas id="c1"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>USD/DOP</h2><p class="p-sub">${tr("Tasa de venta diaria · últimos 12 meses · DOP por USD","Daily sell rate · last 12 months · DOP per USD")}</p></div>${real()}</div><div class="chart"><canvas id="c2"></canvas></div></div>
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Combustibles por tipo","Fuel prices by type")}</h2><p class="p-sub">${tr("RD$ por galón · semana del","RD$ per gallon · week of")} ${fmtDate(REAL.fuel.w[pn])}</p></div>${real()}</div><div class="chart short"><canvas id="c3"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${tr("Canasta familiar por región","Family basket by region")}</h2><p class="p-sub">${tr("RD$ mensuales","RD$ per month")} · ${fmtMonth(nat.m[cn])}</p></div>${real()}</div>
+      ${table([tr("Región","Region"),tr("Costo","Cost"),tr("Var. interanual","YoY change")], [[`<b>${nm("Nacional")}</b>`,`<b>RD$${nf(nat.c[cn],0)}</b>`,pct(nat.y[cn])]].concat(REAL.col.filter(s=>s.t==="region").map(s=>[nm(s.n),`RD$${nf(s.c[s.c.length-1],0)}`,pct(s.y[s.y.length-1])])))}</div>
+  </section>
+  <section class="panel"><h2>${tr("Observaciones","Observations")}</h2><ul class="obs" id="obs"></ul><p class="note">${tr("Las observaciones se calculan automáticamente con los mismos datos de las tarjetas. Describen lo que muestran los datos; no establecen causas.","Observations are calculated automatically from the same data as the cards. They describe the data; they do not establish causes.")}</p></section>`);
+  const m24 = 24;
+  lineChart("c1", lastN(hl.m,m24).map(fmtMonth), [{label:tr("Inflación general","Headline inflation"),data:lastN(hl.yo,m24),color:"--s1",fill:true},{label:tr("Subyacente","Core"),data:lastN(core.yo,m24),color:"--s2",dash:[6,4]}], {yFmt:v=>nf(v,1)+" %"});
+  const k = 250; lineChart("c2", lastN(fx.d,k).map(fmtDate), [{label:tr("Venta","Sell"),data:lastN(fx.s,k),color:"--s2"}], {yFmt:v=>nf(v,2)});
+  barChart("c3", REAL.fuel.f.map(f=>nm(f.name)), [{label:tr("RD$/galón","RD$/gallon"),data:REAL.fuel.f.map(f=>f.values[f.values.length-1]),color:"--s1"}], {horizontal:true});
+  const ye = lastIndexBefore(fx.d, fx.d[fn].slice(0,4)+"-01-01"), fxYtd = (fx.s[fn]/fx.s[ye]-1)*100;
+  const regs = REAL.col.filter(s=>s.t==="region").map(s=>({n:nm(s.n),v:s.c[s.c.length-1]})).sort((a,b)=>b.v-a.v);
+  const groups = REAL.cpi.filter(s=>s.t==="expenditure_group").map(s=>({n:nm(s.n),v:s.yo[s.yo.length-1]})).sort((a,b)=>b.v-a.v);
+  const rubs = A.rub.filter(r=>r.c==="retail").map(r=>({n:nm(r.r),v:r.yoy[r.yoy.length-1],m:r.m[r.m.length-1]})).filter(r=>r.v!=null && r.m===A.m[am]).sort((a,b)=>b.v-a.v);
+  const yr = fx.d[fn].slice(0,4);
+  $("#obs").innerHTML = [
+    tr(`La inflación interanual se ubicó en <b>${nf(hl.yo[n])} %</b> en ${fmtMonth(hl.m[n])}, ${hl.yo[n]>=hl.yo[n-1]?"por encima":"por debajo"} del mes anterior (${pp(hl.yo[n]-hl.yo[n-1])}). La subyacente fue <b>${nf(core.yo[core.yo.length-1])} %</b>.`,
+       `Year-over-year inflation was <b>${nf(hl.yo[n])} %</b> in ${fmtMonth(hl.m[n])}, ${hl.yo[n]>=hl.yo[n-1]?"above":"below"} the previous month (${pp(hl.yo[n]-hl.yo[n-1])}). Core inflation was <b>${nf(core.yo[core.yo.length-1])} %</b>.`),
+    tr(`El grupo con mayor inflación interanual fue <b>${groups[0].n}</b> (${nf(groups[0].v)} %) y el de menor, <b>${groups[groups.length-1].n}</b> (${nf(groups[groups.length-1].v)} %).`,
+       `The expenditure group with the highest year-over-year inflation was <b>${groups[0].n}</b> (${nf(groups[0].v)} %) and the lowest <b>${groups[groups.length-1].n}</b> (${nf(groups[groups.length-1].v)} %).`),
+    tr(`La tasa de venta USD/DOP acumula <b>${pct(fxYtd)}</b> en ${yr}: ${fxYtd<0?"el peso se ha apreciado":"el peso se ha depreciado"} frente al dólar.`,
+       `The USD/DOP sell rate has moved <b>${pct(fxYtd)}</b> in ${yr}: the peso has ${fxYtd<0?"appreciated":"depreciated"} against the dollar.`),
+    tr(`La canasta familiar más costosa corresponde a la región <b>${regs[0].n}</b> (RD$${nf(regs[0].v,0)}) y la menos costosa a <b>${regs[regs.length-1].n}</b> (RD$${nf(regs[regs.length-1].v,0)}).`,
+       `The most expensive family basket is in the <b>${regs[0].n}</b> region (RD$${nf(regs[0].v,0)}) and the least expensive in <b>${regs[regs.length-1].n}</b> (RD$${nf(regs[regs.length-1].v,0)}).`),
+    rubs.length ? tr(`En precios agropecuarios minoristas, el grupo con mayor alza interanual promedio fue <b>${rubs[0].n}</b> (${pct(rubs[0].v,1)}) y el de menor, <b>${rubs[rubs.length-1].n}</b> (${pct(rubs[rubs.length-1].v,1)}).`,
+       `In retail agricultural prices, the product group with the largest average year-over-year increase was <b>${rubs[0].n}</b> (${pct(rubs[0].v,1)}) and the smallest <b>${rubs[rubs.length-1].n}</b> (${pct(rubs[rubs.length-1].v,1)}).`) : ""
+  ].filter(Boolean).map(t=>`<li><span>${t}</span></li>`).join("");
+}
+
+/* ---------- 2. Inflación ---------- */
+function renderInflacion(el){
+  const D = {inf_period:"36", inf_dim:"group", inf_month:""};
+  const hl = cpiSeries("headline"); const months = hl.m;
+  const period = +F("inf_period",D.inf_period), dim = F("inf_dim",D.inf_dim), month = F("inf_month", months[months.length-1]);
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("inf_period",tr("Período","Period"),[["12",tr("Últimos 12 meses","Last 12 months")],["36",tr("Últimos 36 meses","Last 36 months")],["60",tr("Últimos 5 años","Last 5 years")],["0",tr("Desde 2018","Since 2018")]],period) +
+    sel("inf_dim",tr("Comparar por","Compare by"),[["group",tr("Grupo de gasto","Expenditure group")],["region",tr("Región","Region")]],dim) +
+    sel("inf_month",tr("Mes de comparación","Comparison month"),months.slice().reverse().map(m=>[m,fmtMonth(m)]),month),"inflacion"));
+  const i = months.indexOf(month), core = cpiSeries("core");
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"pct",label:tr("IPC general (índice)","Headline CPI (index)"),value:nf(hl.i[i]),sub:`${fmtMonth(month)} · ${tr("base oct 2019–sep 2020 = 100","base Oct 2019–Sep 2020 = 100")}`,tag:"BCRD"})}
+    ${kpi({icon:"pct",label:tr("Inflación mensual","Monthly inflation"),value:`${nf(hl.mo[i])} %`,sub:fmtMonth(month),delta:hl.mo[i]-hl.mo[i-1],deltaText:`${pp(hl.mo[i]-hl.mo[i-1])} ${tr("vs. mes anterior","vs. previous month")}`,tag:"BCRD"})}
+    ${kpi({icon:"pct",label:tr("Inflación interanual","Year-over-year inflation"),value:`${nf(hl.yo[i])} %`,sub:fmtMonth(month),delta:hl.yo[i]-hl.yo[i-1],deltaText:`${pp(hl.yo[i]-hl.yo[i-1])} ${tr("vs. mes anterior","vs. previous month")}`,tag:"BCRD"})}
+    ${kpi({icon:"pct",label:tr("Inflación acumulada (vs. dic.)","Year-to-date inflation (vs. Dec.)"),value:`${nf(hl.yt[i])} %`,sub:fmtMonth(month),tag:"BCRD"})}
+    ${kpi({icon:"pct",label:tr("Inflación subyacente interanual","Core inflation, year over year"),value:`${nf(core.yo[i])} %`,sub:fmtMonth(month),delta:core.yo[i]-core.yo[i-1],deltaText:`${pp(core.yo[i]-core.yo[i-1])} ${tr("vs. mes anterior","vs. previous month")}`,tag:"BCRD"})}
+  </section>
+  <section class="grid2">
+    <div class="panel"><h2>${tr("Inflación interanual: general vs. subyacente","Year-over-year inflation: headline vs. core")}</h2><p class="p-sub">${tr("% respecto al mismo mes del año anterior","% vs. the same month a year earlier")}</p><div class="chart"><canvas id="i1"></canvas></div></div>
+    <div class="panel"><h2>${tr("Inflación mensual","Monthly inflation")}</h2><p class="p-sub">${tr("% respecto al mes anterior · IPC general","% vs. previous month · headline CPI")}</p><div class="chart"><canvas id="i2"></canvas></div></div>
+  </section>
+  <section class="panel"><div class="p-head"><div><h2>${dim==="group"?tr("Inflación interanual por grupo de gasto","Year-over-year inflation by expenditure group"):tr("Inflación interanual por región","Year-over-year inflation by region")}</h2><p class="p-sub">${fmtMonth(month)} · ${tr("ordenado de mayor a menor · referencia: inflación general","sorted from highest to lowest · reference: headline inflation")} (${nf(hl.yo[i])} %)</p></div>${csvBtn("cpyInf")}</div>
+    <div class="chart ${dim==="group"?"tall":"short"}"><canvas id="i3"></canvas></div><div id="infTbl"></div></section>`);
+  const sl = a => period ? a.slice(Math.max(0, i+1-period), i+1) : a.slice(0, i+1);
+  const lbl = sl(months).map(fmtMonth);
+  lineChart("i1", lbl, [{label:tr("General","Headline"),data:sl(hl.yo),color:"--s1",fill:true},{label:tr("Subyacente","Core"),data:sl(core.yo),color:"--s2",dash:[6,4]}], {yFmt:v=>nf(v,1)+" %"});
+  barChart("i2", lbl, [{label:tr("Inflación mensual","Monthly inflation"),data:sl(hl.mo),colors:sl(hl.mo).map(v=>v<0?css("--s4"):css("--s1"))}], {yFmt:v=>nf(v,2)+" %"});
+  const ser = REAL.cpi.filter(s => s.t === (dim==="group"?"expenditure_group":"region")).map(s => ({n:nm(s.n), yo:s.yo[s.m.indexOf(month)], mo:s.mo[s.m.indexOf(month)], i:s.i[s.m.indexOf(month)]})).filter(x=>x.yo!=null).sort((a,b)=>b.yo-a.yo);
+  barChart("i3", ser.map(x=>x.n), [{label:tr("Interanual","Year over year"),data:ser.map(x=>x.yo),colors:ser.map(x=>x.yo>hl.yo[i]?css("--s3"):css("--s1"))}], {horizontal:true, yFmt:v=>nf(v,2)+" %"});
+  const cols = [dim==="group"?tr("Grupo de gasto","Expenditure group"):tr("Región","Region"),tr("Índice","Index"),tr("Mensual","Monthly"),tr("Interanual","YoY"),tr("vs. general","vs. headline")];
+  const rows = ser.map(x=>[x.n,nf(x.i),pct(x.mo),pct(x.yo),pp(x.yo-hl.yo[i])]);
+  $("#infTbl").innerHTML = table(cols, rows) + `<p class="note">${tr('Rojo = por encima de la inflación general; azul = igual o por debajo. "pp" son puntos porcentuales: diferencia entre dos tasas.','Red = above headline inflation; blue = equal or below. "pp" means percentage points: the difference between two rates.')}</p>`;
+  bindCopy("cpyInf", cols, rows, tr("inflación","inflation")); bindFilters(D);
+}
+
+/* ---------- 3. Mercado cambiario ---------- */
+function renderCambiario(el){
+  const D = {fx_period:"365", fx_type:"both"};
+  const period = +F("fx_period",D.fx_period), type = F("fx_type",D.fx_type);
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("fx_period",tr("Período","Period"),[["90",tr("Últimos 3 meses","Last 3 months")],["180",tr("Últimos 6 meses","Last 6 months")],["365",tr("Último año","Last year")],["1826",tr("Últimos 5 años","Last 5 years")],["0",tr("Todo (desde 1991)","All (since 1991)")]],period)+
+    sel("fx_type",tr("Tasa","Rate"),[["both",tr("Compra y venta","Buy and sell")],["s",tr("Solo venta","Sell only")],["b",tr("Solo compra","Buy only")]],type),"cambiario"));
+  const fx = REAL.fx, n = fx.d.length-1, last = fx.d[n];
+  const startD = period ? addMonths(last, -Math.round(period/30.4)) : fx.d[0];
+  const idx = fx.d.map((d,i)=>[d,i]).filter(([d])=>d>=startD).map(([,i])=>i);
+  const ye = lastIndexBefore(fx.d, last.slice(0,4)+"-01-01");
+  const win = fx.d.map((d,i)=>[d,i]).filter(([d])=>d>addMonths(last,-12)).map(([,i])=>fx.s[i]);
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"fx",label:tr("Venta","Sell"),value:nf(fx.s[n],4),sub:`${tr("DOP por USD","DOP per USD")} · ${fmtDate(last)}`,delta:fx.s[n]-fx.s[n-1],deltaText:`${pct((fx.s[n]/fx.s[n-1]-1)*100,3)} ${tr("vs. día anterior","vs. previous day")}`,tag:"BCRD"})}
+    ${kpi({icon:"fx",label:tr("Compra","Buy"),value:nf(fx.b[n],4),sub:`${tr("DOP por USD","DOP per USD")} · ${fmtDate(last)}`,delta:fx.b[n]-fx.b[n-1],deltaText:`${pct((fx.b[n]/fx.b[n-1]-1)*100,3)} ${tr("vs. día anterior","vs. previous day")}`,tag:"BCRD"})}
+    ${kpi({icon:"fx",label:tr("Diferencial venta − compra","Sell − buy spread"),value:nf(fx.s[n]-fx.b[n],4),sub:"DOP",tag:"BCRD"})}
+    ${kpi({icon:"fx",label:tr("Variación en el año (venta)","Year-to-date change (sell)"),value:pct((fx.s[n]/fx.s[ye]-1)*100),sub:`vs. ${fmtDate(fx.d[ye])} · ${tr("↑ = depreciación del peso","↑ = peso depreciation")}`,tag:"BCRD"})}
+    ${kpi({icon:"fx",label:tr("Rango 52 semanas (venta)","52-week range (sell)"),value:`${nf(Math.min(...win),2)} – ${nf(Math.max(...win),2)}`,sub:tr("Mínimo – máximo","Low – high"),tag:"BCRD"})}
+  </section>
+  <section class="grid3">
+    <div class="panel"><h2>${tr("USD/DOP diario","Daily USD/DOP")}</h2><p class="p-sub">${tr("DOP por USD · media móvil de 30 observaciones en línea discontinua","DOP per USD · 30-observation moving average dashed")}</p><div class="chart tall"><canvas id="f1"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${tr("Promedio anual de la tasa de venta","Annual average sell rate")}</h2><p class="p-sub">${tr("DOP por USD · 1991 a la fecha (año en curso parcial)","DOP per USD · 1991 to date (current year partial)")}</p></div>${real()}</div><div class="chart tall"><canvas id="f2"></canvas></div></div>
+  </section>
+  <section class="panel"><div class="p-head"><div><h2>${tr("Resumen mensual de la tasa de venta","Monthly summary of the sell rate")}</h2><p class="p-sub">${tr("Cierre = último día hábil del mes · variaciones convencionales (↑ = depreciación del peso)","Close = last business day of the month · conventional changes (↑ = peso depreciation)")}</p></div>${csvBtn("cpyFx")}</div><div id="fxTbl"></div></section>
+  <p class="note">${tr("Historia desde 1991: archivo diario oficial del BCRD (descarga automática). Un dato de la fuente (25 ene 1991, compra mayor que venta) fue rechazado por las reglas de calidad.","History since 1991: official BCRD daily file (automatic download). One source record (Jan 25, 1991, buy above sell) was rejected by the data-quality rules.")}</p>`);
+  const lbl = idx.map(i=>fmtDate(fx.d[i]));
+  const ma = idx.map(i => i>=29 ? fx.s.slice(i-29,i+1).reduce((a,b)=>a+b,0)/30 : null);
+  const ds = [];
+  if (type!=="b") ds.push({label:tr("Venta","Sell"),data:idx.map(i=>fx.s[i]),color:"--s1"});
+  if (type!=="s") ds.push({label:tr("Compra","Buy"),data:idx.map(i=>fx.b[i]),color:"--s2"});
+  if (type!=="b") ds.push({label:tr("Media móvil 30 (venta)","30-day moving average (sell)"),data:ma,color:"--muted",dash:[5,5]});
+  lineChart("f1", lbl, ds, {yFmt:v=>nf(v,2)});
+  const byY = {}; fx.d.forEach((d,i)=>{ (byY[d.slice(0,4)] ||= []).push(fx.s[i]); });
+  const yrs = Object.keys(byY).sort();
+  barChart("f2", yrs, [{label:tr("Promedio anual","Annual average"),data:yrs.map(y=>byY[y].reduce((a,b)=>a+b,0)/byY[y].length),color:"--s1"}], {yFmt:v=>nf(v,0)});
+  const byM = {}; fx.d.forEach((d,i)=>{ byM[d.slice(0,7)] = i; });
+  const keys = Object.keys(byM), ms = keys.filter(m => m >= startD.slice(0,7));
+  const rows = ms.map(m => { const i = byM[m]; const pm = keys[keys.indexOf(m)-1]; const pi = pm?byM[pm]:null;
+    return [fmtMonth(m), fmtDate(fx.d[i]), nf(fx.s[i],4), pi!=null?pct((fx.s[i]/fx.s[pi]-1)*100):"—", nf(fx.s[i]-fx.b[i],4)]; }).reverse();
+  const cols = [tr("Mes","Month"),tr("Último día hábil","Last business day"),tr("Venta","Sell"),tr("Var. mensual","Monthly change"),tr("Diferencial","Spread")];
+  $("#fxTbl").innerHTML = table(cols, rows); bindCopy("cpyFx", cols, rows, tr("tipo de cambio","exchange rate")); bindFilters(D);
+}
+
+/* ---------- 4. Canasta ---------- */
+function renderCanasta(el){
+  const D = {col_dim:"income_quintile", col_period:"36"};
+  const dim = F("col_dim",D.col_dim), period = +F("col_period",D.col_period);
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("col_dim",tr("Desglose","Breakdown"),[["income_quintile",tr("Quintil de ingreso","Income quintile")],["region",tr("Región","Region")]],dim)+
+    sel("col_period",tr("Período","Period"),[["12",tr("Últimos 12 meses","Last 12 months")],["36",tr("Últimos 36 meses","Last 36 months")],["0",tr("Todo el histórico","Full history")]],period),"canasta"));
+  const nat = colSeg("national"), n = nat.m.length-1;
+  const q1 = colSeg("income_quintile","Quintil 1"), q5 = colSeg("income_quintile","Quintil 5");
+  const segs = REAL.col.filter(s => s.t === dim);
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"cart",label:tr("Canasta nacional","National basket"),value:`RD$${nf(nat.c[n],0)}`,sub:`${fmtMonth(nat.m[n])} · ${tr("por mes","per month")}`,delta:nat.c[n]-nat.c[n-1],deltaText:`${pct((nat.c[n]/nat.c[n-1]-1)*100)} ${tr("vs. mes anterior","vs. previous month")}`,tag:"BCRD",sparkVals:lastN(nat.c,24)})}
+    ${kpi({icon:"cart",label:tr("Variación interanual","Year-over-year change"),value:pct(nat.y[n]),sub:tr("Canasta nacional","National basket"),tag:"BCRD"})}
+    ${kpi({icon:"cart",label:tr("Brecha Quintil 5 − Quintil 1","Gap Quintile 5 − Quintile 1"),value:`RD$${nf(q5.c[n]-q1.c[n],0)}`,sub:tr("Diferencia mensual","Monthly difference"),tag:"BCRD"})}
+    ${kpi({icon:"cart",label:"Q5 / Q1",value:`${nf(q5.c[n]/q1.c[n],2)} ${tr("veces","times")}`,sub:fmtMonth(nat.m[n]),tag:"BCRD"})}
+  </section>
+  <p class="note">${tr("Canasta familiar del <b>BCRD</b> (encuesta ENGIH 2018 indexada por el IPC). No es equivalente a los levantamientos de <b>Pro Consumidor</b>. Los valores por quintil antes de octubre de 2020 son una retropolación del BCRD (línea punteada).","<b>BCRD</b> family basket (ENGIH 2018 survey indexed by CPI). It is not equivalent to the <b>Pro Consumidor</b> price surveys. Quintile values before October 2020 are a BCRD back-calculation (dotted line).")}</p>
+  <section class="grid2">
+    <div class="panel"><h2>${dim==="region"?tr("Evolución por región","Trend by region"):tr("Evolución por quintil","Trend by quintile")}</h2><p class="p-sub">${tr("RD$ por mes","RD$ per month")}</p><div class="chart tall"><canvas id="k1"></canvas></div></div>
+    <div class="panel"><h2>${tr("Comparación del último mes","Latest month comparison")}</h2><p class="p-sub">${fmtMonth(nat.m[n])} · ${tr("RD$ por mes","RD$ per month")}</p><div class="chart tall"><canvas id="k2"></canvas></div></div>
+  </section>
+  <section class="panel"><div class="p-head"><div><h2>${tr("Detalle","Detail")}</h2><p class="p-sub">${tr("Último mes y mismo mes del año anterior","Latest month and the same month a year earlier")}</p></div>${csvBtn("cpyCol")}</div><div id="colTbl"></div></section>`);
+  const allM = nat.m, start = period ? allM.length - period : 0, months = allM.slice(start);
+  const colors = ["--s1","--s2","--s3","--s4","--s5","--s6"];
+  const ds = segs.map((s,k)=>{ const data = months.map(m => { const j = s.m.indexOf(m); return j<0?null:s.c[j]; });
+    const retro = months.map(m => { const j = s.m.indexOf(m); return j>=0 && s.r[j]; });
+    return {label:nm(s.n), data, color:colors[k%6], segment:{borderDash: c => retro[c.p1DataIndex] ? [4,4] : undefined}}; });
+  lineChart("k1", months.map(fmtMonth), ds, {yFmt:v=>"RD$"+nf(v,0)});
+  const lastVals = segs.map(s=>({n:nm(s.n),v:s.c[s.c.length-1]})).sort((a,b)=> dim==="region"? b.v-a.v : 0);
+  barChart("k2", lastVals.map(x=>x.n), [{label:tr("RD$ / mes","RD$ / month"),data:lastVals.map(x=>x.v),color:"--s1"}], {horizontal:dim==="region", yFmt:v=>"RD$"+nf(v,0)});
+  const rows = segs.map(s => { const j = s.c.length-1; return [nm(s.n), `RD$${nf(s.c[j],0)}`, `RD$${nf(s.c[j-12],0)}`, pct(s.y[j]), s.r[j-12]?tr("Comparación usa valor retropolado","Comparison uses a back-calculated value"):"—"]; });
+  const cols = [dim==="region"?tr("Región","Region"):tr("Segmento","Segment"),tr("Último mes","Latest month"),tr("Hace 12 meses","12 months ago"),tr("Var. interanual","YoY change"),tr("Nota","Note")];
+  $("#colTbl").innerHTML = table(cols, rows); bindCopy("cpyCol", cols, rows, tr("canasta","basket")); bindFilters(D);
+}
+
+/* ---------- 5. Combustibles ---------- */
+function renderCombustibles(el){
+  const FU = REAL.fuel, D = {fu_prod:"all", fu_period:"52"};
+  const prod = F("fu_prod",D.fu_prod), period = +F("fu_period",D.fu_period);
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("fu_prod",tr("Producto","Product"),[["all",tr("Todos","All")]].concat(FU.f.map(f=>[f.name,nm(f.name)])),prod)+
+    sel("fu_period",tr("Período","Period"),[["13",tr("Últimas 13 semanas","Last 13 weeks")],["26",tr("Últimas 26 semanas","Last 26 weeks")],["52",tr("Últimas 52 semanas","Last 52 weeks")],["156",tr("Últimos 3 años","Last 3 years")],["0",tr("Desde 2018","Since 2018")]],period),"combustibles"));
+  const list = FU.f.filter(f => prod==="all" || f.name===prod); const n = FU.w.length-1; const ya = yoyIdx(FU.w, n);
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">${list.map(f=>{ const v=f.values; const ch=(v[n]/v[n-1]-1)*100; const yo = ya>=0 && v[ya] ? (v[n]/v[ya]-1)*100 : null;
+    return kpi({icon:"fuel",label:nm(f.name),value:`RD$${nf(v[n])}`,sub:`${tr("Por galón","Per gallon")} · ${fmtDate(FU.w[n])} – ${fmtDate(FU.e[n])}`,delta:yo,deltaText:`${ch===0?tr("Sin cambio semanal","No weekly change"):pct(ch)+tr(" semanal"," weekly")} · ${pct(yo)} ${tr("interanual","YoY")}`,tag:"MICM",sparkVals:lastN(v,26),sparkVar:"--s1"}); }).join("")}</section>
+    <section class="panel"><div class="p-head"><div><h2>${tr("Precio semanal por tipo","Weekly price by type")}</h2><p class="p-sub">${tr("RD$ por galón · precios oficiales vigentes cada semana","RD$ per gallon · official prices in force each week")}</p></div>${real()}</div><div class="chart tall"><canvas id="u1"></canvas></div></section>
+    <section class="panel"><div class="p-head"><div><h2>${tr("Detalle semanal","Weekly detail")}</h2><p class="p-sub">${tr("Fuente: MICM vía datos.gob.do, archivo XLSX (el CSV redondea a pesos enteros). Precios congelados de agosto a diciembre de 2025.","Source: MICM via datos.gob.do, XLSX file (the CSV rounds to whole pesos). Prices were frozen from August to December 2025.")}</p></div>${csvBtn("cpyFu")}</div><div id="fuTbl"></div></section>`);
+  const w = period ? FU.w.slice(-period) : FU.w; const off = FU.w.length - w.length;
+  lineChart("u1", w.map(fmtDate), list.map((f,k)=>({label:nm(f.name),data:f.values.slice(off),color:["--s1","--s2","--s3","--s4","--s5"][FU.f.indexOf(f)%5],dash:k%2?[6,3]:[]})), {stepped:true, yFmt:v=>"RD$"+nf(v,0)});
+  const cols = [tr("Semana","Week")].concat(list.map(f=>nm(f.name))); const rows = w.map((d,i)=>[`${fmtDate(d)} – ${fmtDate(FU.e[off+i])}`].concat(list.map(f=>nf(f.values[off+i])))).reverse();
+  $("#fuTbl").innerHTML = table(cols, rows); bindCopy("cpyFu", cols, rows, tr("combustibles","fuel")); bindFilters(D);
+}
+
+/* ---------- 6. Precios al consumidor ---------- */
+function renderConsumidor(el){
+  const C = REAL.con.map(r => ({m:r[0],p:r[1],pr:r[2],avg:r[3],min:r[4],max:r[5],cs:r[6],ms:r[7],seg:r[8],sp:r[9],mom:r[10]}));
+  const months = [...new Set(C.map(r=>r.m))].sort();
+  const D = {con_m:months[months.length-1], con_show:"all"};
+  const m = F("con_m",D.con_m), show = F("con_show",D.con_show);
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("con_m",tr("Mes","Month"),months.slice().reverse().map(x=>[x,fmtMonth(x)]),m)+
+    sel("con_show",tr("Productos","Products"),[["all",tr("Todos","All")],["mom",tr("Solo con variación mensual comparable","Only with comparable monthly change")],["multi",tr("Precio en 2 o más segmentos","Priced in 2+ segments")]],show),"consumidor"));
+  const rowsM = C.filter(r=>r.m===m); const withMom = rowsM.filter(r=>r.mom!=null);
+  const up = withMom.filter(r=>r.mom>0).length, down = withMom.filter(r=>r.mom<0).length;
+  const avgMom = withMom.length ? withMom.reduce((a,r)=>a+r.mom,0)/withMom.length : null;
+  const prods = new Set(rowsM.map(r=>r.p.toLowerCase())).size;
+  const tag = "Pro Consumidor";
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"bag",label:tr("Productos con precio","Products priced"),value:nf(prods,0),sub:`${fmtMonth(m)} · ${nf(rowsM.length,0)} ${tr("presentaciones","presentations")}`,tag})}
+    ${kpi({icon:"bag",label:tr("Suben vs. mes anterior","Up vs. previous month"),value:nf(up,0),sub:withMom.length?`${tr("de","of")} ${withMom.length} ${tr("comparables","comparable")}`:tr("Sin mes anterior en la fuente","No previous month in the source"),delta:1,deltaText:withMom.length?`${nf(up/withMom.length*100,0)} %`:"",tag})}
+    ${kpi({icon:"bag",label:tr("Bajan vs. mes anterior","Down vs. previous month"),value:nf(down,0),sub:withMom.length?`${tr("de","of")} ${withMom.length} ${tr("comparables","comparable")}`:tr("Sin mes anterior en la fuente","No previous month in the source"),delta:-1,deltaText:withMom.length?`${nf(down/withMom.length*100,0)} %`:"",tag})}
+    ${kpi({icon:"pct",label:tr("Variación mensual promedio","Average monthly change"),value:avgMom==null?"—":pct(avgMom),sub:tr("Mismo producto, presentación y segmento","Same product, presentation and segment"),delta:avgMom,tag})}
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Mayores alzas del mes","Largest increases")}</h2><p class="p-sub">${tr("% vs. mes anterior · comparación por segmento","% vs. previous month · like-for-like by segment")}</p></div>${real()}</div><div class="chart"><canvas id="k1"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${tr("Mayores bajas del mes","Largest decreases")}</h2><p class="p-sub">${tr("% vs. mes anterior · comparación por segmento","% vs. previous month · like-for-like by segment")}</p></div>${real()}</div><div class="chart"><canvas id="k2"></canvas></div></div>
+  </section>
+  <section class="panel"><div class="p-head"><div><h2>${tr("Precios por producto","Prices by product")} · ${fmtMonth(m)}</h2><p class="p-sub">${tr("RD$ por unidad de venta. Segmentos: almacenes, colmados, mercados, supermercados grandes y pequeños.","RD$ per sales unit. Segments: warehouses, colmados, markets, large and small supermarkets.")}</p></div>${csvBtn("cpyCon")}</div><div id="conTbl"></div></section>`);
+  const lab = r => { const t = `${r.p} (${r.pr})`; return t.length > 34 ? t.slice(0,33) + "…" : t; };
+  const top = withMom.slice().sort((a,b)=>b.mom-a.mom).slice(0,10), bot = withMom.slice().sort((a,b)=>a.mom-b.mom).slice(0,10);
+  if (withMom.length){ barChart("k1", top.map(lab), [{label:tr("Var. mensual %","Monthly change %"),data:top.map(r=>r.mom),color:"--s5"}], {horizontal:true, yFmt:v=>nf(v,1)+" %"});
+    barChart("k2", bot.map(lab), [{label:tr("Var. mensual %","Monthly change %"),data:bot.map(r=>r.mom),color:"--s2"}], {horizontal:true, yFmt:v=>nf(v,1)+" %"}); }
+  else { ["k1","k2"].forEach(id=>{ document.getElementById(id).parentElement.innerHTML = `<div class="empty">${tr(`${fmtMonth(m)} es el primer mes de la fuente: no hay mes anterior para comparar.`,`${fmtMonth(m)} is the first month in the source: there is no previous month to compare.`)}</div>`; }); }
+  const list = rowsM.filter(r => show==="all" || (show==="mom" && r.mom!=null) || (show==="multi" && r.seg>=2));
+  const cols = [tr("Producto","Product"),tr("Presentación","Presentation"),tr("Promedio","Average"),tr("Mínimo","Min"),tr("Máximo","Max"),tr("Más barato en","Cheapest in"),tr("Más caro en","Most expensive in"),tr("Dif. máx/mín","Max/min gap"),tr("Var. mensual","Monthly change")];
+  const rows = list.map(r=>[r.p,r.pr,nf(r.avg),nf(r.min),nf(r.max),nm(r.cs),nm(r.ms),r.seg>=2?pct(r.sp,1):"—",pct(r.mom)]);
+  $("#conTbl").innerHTML = table(cols, rows); bindCopy("cpyCon", cols, rows, tr("precios al consumidor","consumer prices")); bindFilters(D);
+}
+
+/* ---------- 7. Electricidad ---------- */
+function renderElectricidad(el){
+  const E = REAL.elec, DN = ["Total EDE","Edenorte","Edesur","Edeeste"];
+  const D = {el_dist:"Total EDE", el_period:"0", el_kwh:"200"};
+  const dist = F("el_dist",D.el_dist), period = +F("el_period",D.el_period), kwh = F("el_kwh",D.el_kwh);
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("el_dist",tr("Distribuidora","Distributor"),DN.map(x=>[x,nm(x)]),dist)+
+    sel("el_period",tr("Período","Period"),[["0",tr("Desde 2020","Since 2020")],["36",tr("Últimos 3 años","Last 3 years")],["12",tr("Últimos 12 meses","Last 12 months")]],period)+
+    sel("el_kwh",tr("Consumo de la factura","Bill consumption"),[["200","200 kWh/mes"],["300","300 kWh/mes"]].map(([v,t])=>[v,LANG==="en"?t.replace("mes","month"):t]),kwh),"electricidad"));
+  const s = E.d[dist], n = E.m.length-1;
+  const billDist = dist==="Total EDE" ? "Edesur" : dist, bl = E.bill[`${billDist}|${kwh}`];
+  const bn = E.bm.indexOf(E.m[n]) >= 0 ? E.bm.indexOf(E.m[n]) : E.bm.length-1;
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"bolt",label:tr("Precio medio de venta","Average selling price"),value:`RD$${nf(s.p[n])}`,sub:`${tr("Por kWh","Per kWh")} · ${fmtMonth(E.m[n])} · ${nm(dist)}`,delta:s.y[n],deltaText:`${pct(s.y[n])} ${tr("interanual","YoY")}`,tag:"MEM",sparkVals:s.p,sparkVar:"--s4"})}
+    ${kpi({icon:"bolt",label:tr("Precio medio de compra","Average purchase price"),value:`${nf(s.b[n])} ¢US$`,sub:`${tr("Por kWh comprado · venta:","Per kWh bought · selling:")} ${nf(s.s[n])} ¢US$`,tag:"MEM",sparkVals:s.b,sparkVar:"--s1"})}
+    ${kpi({icon:"pct",label:tr("Pérdidas (12 meses)","Losses (12 months)"),value:`${nf(s.l[n],1)} %`,sub:tr("De la energía comprada","Of energy bought"),delta:s.l[n]-s.l[n-12],deltaText:`${pp(s.l[n]-s.l[n-12],1)} ${tr("vs. hace un año","vs. a year ago")}`,tag:"MEM",sparkVals:s.l,sparkVar:"--s3"})}
+    ${kpi({icon:"pct",label:tr("CRI (12 meses)","Cash recovery index (12 months)"),value:`${nf(s.k[n],1)} %`,sub:`${tr("Cobranza","Collection")} ${nf(s.c[n],1)} %`,delta:s.k[n]-s.k[n-12],deltaText:`${pp(s.k[n]-s.k[n-12],1)} ${tr("vs. hace un año","vs. a year ago")}`,tag:"MEM",sparkVals:s.k,sparkVar:"--s2"})}
+    ${kpi({icon:"home",label:`${tr("Factura BTS-1","BTS-1 bill")} · ${kwh} kWh`,value:`RD$${nf(bl.a[bn],0)}`,sub:`${tr("Tarifa aplicada","Applied tariff")} · ${billDist} · ${fmtMonth(E.bm[bn])}`,delta:-1,deltaText:`${tr("Con tarifa de referencia","With reference tariff")}: RD$${nf(bl.r[bn],0)}`,tag:"SIE / MEM",sparkVals:bl.a,sparkVar:"--s5"})}
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Precio medio de venta por distribuidora","Average selling price by distributor")}</h2><p class="p-sub">${tr("RD$ por kWh facturado · mensual","RD$ per kWh billed · monthly")}</p></div>${real()}</div><div class="chart"><canvas id="e1"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${tr("Factura residencial BTS-1","Residential BTS-1 bill")} · ${kwh} kWh</h2><p class="p-sub">${tr("RD$ por mes","RD$ per month")} · ${billDist} · ${tr("tarifa aplicada vs. tarifa de referencia (costo)","applied vs. reference (cost) tariff")}</p></div>${real()}</div><div class="chart"><canvas id="e2"></canvas></div></div>
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Pérdidas de energía (año móvil)","Energy losses (rolling year)")}</h2><p class="p-sub">${tr("% de la energía comprada que no se factura","% of energy bought that is not billed")}</p></div>${real()}</div><div class="chart"><canvas id="e3"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${tr("Tarifa BTS-1 vigente","Current BTS-1 tariff")} · ${fmtMonth(E.tar.m)}</h2><p class="p-sub">${tr("RD$ · residencial baja tensión · aplicada vs. referencia","RD$ · residential low voltage · applied vs. reference")}</p></div>${real()}</div><div id="eTar"></div></div>
+  </section>
+  <section class="panel"><div class="p-head"><div><h2>${tr("Detalle mensual","Monthly detail")} · ${nm(dist)}</h2><p class="p-sub">${tr("Fuente: MEM, Informe de Desempeño de las EDE (anexos). Tarifas: resoluciones de la SIE recogidas en el anexo.","Source: MEM, EDE Performance Report (annexes). Tariffs: SIE resolutions included in the annex.")}</p></div>${csvBtn("cpyEl")}</div><div id="elTbl"></div></section>
+  <p class="note">${tr('La tarifa de referencia refleja el costo; la aplicada es la que paga el cliente. La diferencia es una aproximación del subsidio. Antes de octubre de 2021 la referencia es la "tarifa indexada" y la aplicada era única para las tres distribuidoras.','The reference tariff reflects cost; the applied tariff is what the customer pays. The difference approximates the subsidy. Before October 2021 the reference is the "indexed tariff" and the applied tariff was the same for the three distributors.')}</p>`);
+  const off = period ? Math.max(0, E.m.length - period) : 0, Lb = E.m.slice(off).map(fmtMonth);
+  lineChart("e1", Lb, DN.slice(1).map((d,k)=>({label:d,data:E.d[d].p.slice(off),color:["--s1","--s2","--s3"][k],dash:k?[6,3]:[]})).concat([{label:nm("Total EDE"),data:E.d["Total EDE"].p.slice(off),color:"--s4"}]), {yFmt:v=>"RD$"+nf(v,2)});
+  const boff = period ? Math.max(0, E.bm.length - period) : 0;
+  lineChart("e2", E.bm.slice(boff).map(fmtMonth), [{label:tr("Tarifa aplicada","Applied tariff"),data:bl.a.slice(boff),color:"--s1",fill:true},{label:tr("Tarifa de referencia","Reference tariff"),data:bl.r.slice(boff),color:"--s3",dash:[6,3]}], {stepped:true, yFmt:v=>"RD$"+nf(v,0)});
+  lineChart("e3", Lb, DN.slice(1).map((d,k)=>({label:d,data:E.d[d].l.slice(off),color:["--s1","--s2","--s3"][k]})), {yFmt:v=>nf(v,0)+" %"});
+  const lab = c => { const x = c.replace("Cargo Fijo por Rango de Consumo — ",tr("Cargo fijo · ","Fixed charge · ")).replace("Cargo por Energía — ",tr("Energía · ","Energy · "));
+    return LANG==="en" ? x.replace(/Consumo mensual de/i,"Monthly use from").replace(/ hasta /g," to ").replace(/ en adelante/g," and above").replace(/Los primeros kwh entre/i,"First kWh between").replace(/ y /g," and ") : x; };
+  const trs = E.tar.rows.filter(r=>r[0]===billDist).map(r=>[lab(r[1]),`RD$${nf(r[2])}`,`RD$${nf(r[3])}`]);
+  $("#eTar").innerHTML = table([`${tr("Concepto","Charge")} (${billDist})`,tr("Aplicada","Applied"),tr("Referencia","Reference")], trs);
+  const cols = [tr("Mes","Month"),tr("Precio venta RD$/kWh","Selling price RD$/kWh"),tr("Var. interanual","YoY change"),tr("Precio compra ¢US$/kWh","Purchase price ¢US$/kWh"),tr("Pérdidas 12m %","Losses 12m %"),tr("Cobranza 12m %","Collection 12m %"),"CRI 12m %"];
+  const rows = E.m.slice(off).map((m,i)=>[fmtMonth(m),nf(s.p[off+i]),pct(s.y[off+i]),nf(s.b[off+i]),nf(s.l[off+i],1),nf(s.c[off+i],1),nf(s.k[off+i],1)]).reverse();
+  $("#elTbl").innerHTML = table(cols, rows); bindCopy("cpyEl", cols, rows, tr("electricidad","electricity")); bindFilters(D);
+}
+
+/* ---------- 8. Precios agropecuarios (real · Ministerio de Agricultura) ---------- */
+function renderAgro(el){
+  const A = AG.A, M = A.m, last = M.length-1;
+  const D = {ag_ch:"0", ag_rub:"all", ag_prod:"", ag_m:M[last]};
+  const ch = +F("ag_ch",D.ag_ch), rub = F("ag_rub",D.ag_rub), m = F("ag_m",D.ag_m), mi = M.indexOf(m);
+  const chName = ch===0 ? "retail" : "wholesale", baseMk = ch===0 ? AG.ALL : AG.WH;
+  const inRub = s => rub==="all" || A.rubros[s[4]]===rub;
+  const base = A.s.filter(s => s[0]===ch && s[1]===baseMk && inRub(s));
+  const priced = base.filter(s => s[5][mi]!=null);
+  const label = s => `${A.products[s[2]]} (${A.units[s[3]]})`;
+  const prodOpts = priced.map(s => [s[2]+"|"+s[3], label(s)]).sort((a,b)=>a[1].localeCompare(b[1],"es"));
+  let prod = F("ag_prod",""); if (!prodOpts.some(o=>o[0]===prod)) prod = prodOpts.length ? (prodOpts.find(o=>/arroz/i.test(o[1]))||prodOpts[0])[0] : "";
+  el.insertAdjacentHTML("beforeend", filterBar(
+    sel("ag_ch",tr("Canal","Channel"),[["0",tr("Minorista (7 mercados)","Retail (7 markets)")],["1",tr("Mayorista","Wholesale")]],ch)+
+    sel("ag_rub",tr("Grupo de productos","Product group"),[["all",tr("Todos los grupos","All groups")]].concat(A.rubros.map(r=>[r,nm(r)])),rub)+
+    sel("ag_prod",tr("Producto","Product"),prodOpts,prod)+
+    sel("ag_m",tr("Mes","Month"),M.slice().reverse().map(x=>[x,fmtMonth(x)]),m),"agro"));
+  const mom = s => s[5][mi]!=null && mi>0 && s[5][mi-1]!=null ? (s[5][mi]/s[5][mi-1]-1)*100 : null;
+  const yoy = s => mi>=12 && s[5][mi]!=null && s[5][mi-12]!=null ? (s[5][mi]/s[5][mi-12]-1)*100 : (mi===last ? s[6] : null);
+  const moms = priced.map(mom).filter(v=>v!=null), yoys = priced.map(yoy).filter(v=>v!=null);
+  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  const up = moms.filter(v=>v>0).length;
+  const sel0 = A.s.find(s => s[0]===ch && s[1]===baseMk && s[2]+"|"+s[3]===prod);
+  const tag = tr("Min. Agricultura","Min. of Agriculture");
+  el.insertAdjacentHTML("beforeend", `<section class="kpis">
+    ${kpi({icon:"sprout",label:tr("Productos cotizados","Products quoted"),value:nf(priced.length,0),sub:`${fmtMonth(m)} · ${rub==="all"?tr("todos los grupos","all groups"):nm(rub)} · ${ch===0?tr("minorista","retail"):tr("mayorista","wholesale")}`,tag})}
+    ${kpi({icon:"pct",label:tr("Variación mensual promedio","Average monthly change"),value:pct(avg(moms)),sub:tr("Mismo producto, unidad y canal","Same product, unit and channel"),delta:avg(moms),deltaText:moms.length?`${up} ${tr("de","of")} ${moms.length} ${tr("suben","up")} (${nf(up/moms.length*100,0)} %)`:"",tag})}
+    ${kpi({icon:"pct",label:tr("Variación interanual promedio","Average year-over-year change"),value:pct(avg(yoys)),sub:`${yoys.length} ${tr("productos con dato hace 12 meses","products with a value 12 months earlier")}`,delta:avg(yoys),tag})}
+    ${sel0?kpi({icon:"sprout",label:label(sel0),value:`RD$${nf(sel0[5][mi])}`,sub:`${ch===0?nm("Promedio mercados"):nm("Mayorista")} · ${fmtMonth(m)}`,delta:mom(sel0),deltaText:`${pct(mom(sel0))} ${tr("mensual","monthly")} · ${pct(yoy(sel0))} ${tr("interanual","YoY")}`,tag,sparkVals:sel0[5],sparkVar:"--s6"}):""}
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Variación mensual por grupo de productos","Monthly change by product group")}</h2><p class="p-sub">${tr("Promedio de los productos del grupo","Average of the group's products")} · ${fmtMonth(m)} · ${ch===0?tr("minorista","retail"):tr("mayorista","wholesale")}</p></div>${real()}</div><div class="chart"><canvas id="a1"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${sel0?label(sel0):tr("Producto","Product")}</h2><p class="p-sub">${ch===0?tr("RD$ por unidad · promedio de mercados y cada mercado · últimos 25 meses","RD$ per unit · average of markets and each market · last 25 months"):tr("RD$ por unidad mayorista · últimos 25 meses","RD$ per wholesale unit · last 25 months")}</p></div>${real()}</div><div class="chart"><canvas id="a2"></canvas></div></div>
+  </section>
+  <section class="grid2">
+    <div class="panel"><div class="p-head"><div><h2>${tr("Comparación entre mercados","Market comparison")} (AGR-007)</h2><p class="p-sub">${tr("% respecto al promedio de mercados · producto seleccionado","% vs. the average of markets · selected product")} · ${fmtMonth(m)}</p></div>${real()}</div><div class="chart"><canvas id="a3"></canvas></div></div>
+    <div class="panel"><div class="p-head"><div><h2>${tr("Variación interanual por grupo","Year-over-year change by group")}</h2><p class="p-sub">${tr("Promedio de los productos del grupo · últimos 36 meses","Average of the group's products · last 36 months")}</p></div>${real()}</div><div class="chart"><canvas id="a4"></canvas></div></div>
+  </section>
+  <section class="panel"><div class="p-head"><div><h2>${tr("Detalle por producto","Detail by product")} · ${fmtMonth(m)}</h2><p class="p-sub">${ch===0?tr("Precio = promedio de los mercados donde se cotizó. Más barato / más caro: entre los 7 mercados minoristas.","Price = average of the markets where it was quoted. Cheapest / most expensive: among the 7 retail markets."):tr("Precio mayorista nacional publicado por el Ministerio.","National wholesale price published by the Ministry.")}</p></div>${csvBtn("cpyAg")}</div><div id="agTbl"></div></section>
+  <p class="note">${tr("Los 7 mercados (Nuevo, Conaprope, Los Mina, Villa Consuelo, Cristo Rey, Mercadom y Supermercado) están en el Gran Santo Domingo: la fuente no tiene provincias ni regiones, por eso AGR-007 compara mercados. Las comparaciones regionales del proyecto (Ozama, Norte, Este, Sur) están en IPC y canasta familiar. Los precios en 0 o N/D se tratan como no cotizados; los minoristas y mayoristas no se comparan porque usan unidades distintas (libra vs. saco o quintal).","The 7 markets (Nuevo, Conaprope, Los Mina, Villa Consuelo, Cristo Rey, Mercadom and Supermercado) are in Greater Santo Domingo: the source has no provinces or regions, so AGR-007 compares markets. The project's regional comparisons (Ozama, North, East, South) are in CPI and the family basket. Zero or N/D prices are treated as not quoted; retail and wholesale are not compared because they use different units (pound vs. sack or quintal).")}</p>
+  <button class="btn link" id="toRegion" type="button">${icon("link")} ${tr("Ver comparación regional (IPC por región)","See regional comparison (CPI by region)")}</button>`);
+  // a1: groups
+  const gr = A.rubros.map(r => ({r, s:AG.rub(chName, r)})).filter(x=>x.s).map(x => ({n:nm(x.r), v:x.s.mom[x.s.m.indexOf(m)]})).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v);
+  barChart("a1", gr.map(x=>x.n), [{label:tr("Var. mensual %","Monthly change %"),data:gr.map(x=>x.v),colors:gr.map(x=>x.v>0?css("--s3"):css("--s1"))}], {horizontal:true, yFmt:v=>nf(v,1)+" %"});
+  // a2: product trend
+  const family = AG.byKey[prod] || {};
+  if (sel0){
+    const ds = [{label:ch===0?nm("Promedio mercados"):nm("Mayorista"),data:sel0[5],color:"--s1",width:3,fill:ch===1}];
+    if (ch===0) AG.retailMarkets.forEach(([n,i],k) => { if (family[i] && family[i][0]===0) ds.push({label:n,data:family[i][5],color:["--s2","--s3","--s4","--s5","--s6","--muted","--s2"][k],dash:[4,3],width:1.4}); });
+    lineChart("a2", M.map(fmtMonth), ds, {yFmt:v=>"RD$"+nf(v,2)});
+  } else document.getElementById("a2").parentElement.innerHTML = `<div class="empty">${tr("Sin producto para esta selección.","No product for this selection.")}</div>`;
+  // a3: markets vs average
+  if (ch===0 && sel0 && sel0[5][mi]!=null){
+    const mk = AG.retailMarkets.filter(([n,i]) => family[i] && family[i][5][mi]!=null).map(([n,i]) => ({n, v:(family[i][5][mi]/sel0[5][mi]-1)*100, p:family[i][5][mi]})).sort((a,b)=>b.v-a.v);
+    barChart("a3", mk.map(x=>`${x.n} · RD$${nf(x.p)}`), [{label:tr("vs. promedio %","vs. average %"),data:mk.map(x=>x.v),colors:mk.map(x=>x.v>0?css("--s3"):css("--s2"))}], {horizontal:true, yFmt:v=>nf(v,1)+" %"});
+  } else document.getElementById("a3").parentElement.innerHTML = `<div class="empty">${ch===1?tr("El precio mayorista es único (sin mercados): la comparación entre mercados aplica al canal minorista.","The wholesale price is a single national quote: the market comparison applies to the retail channel."):tr("El producto no se cotizó en este mes.","The product was not quoted this month.")}</div>`;
+  // a4: YoY by group, last 36 months
+  const rs = A.rubros.map(r => AG.rub(chName, r)).filter(Boolean);
+  const months36 = [...new Set(rs.flatMap(s=>s.m))].sort().slice(-36);
+  const top = rs.map(s => ({s, n:s.n[s.n.length-1]||0})).sort((a,b)=>b.n-a.n).slice(0,5).map(x=>x.s);
+  lineChart("a4", months36.map(fmtMonth), top.map((s,k)=>({label:nm(s.r),data:months36.map(mm=>{ const j=s.m.indexOf(mm); return j<0?null:s.yoy[j]; }),color:["--s1","--s2","--s3","--s4","--s5"][k],dash:k%2?[5,3]:[]})), {yFmt:v=>nf(v,0)+" %"});
+  // detail table
+  const rows = priced.map(s => { const fam = AG.byKey[s[2]+"|"+s[3]] || {};
+      const mk = ch===0 ? AG.retailMarkets.filter(([n,i]) => fam[i] && fam[i][5][mi]!=null).map(([n,i]) => ({n, p:fam[i][5][mi]})) : [];
+      const lo = mk.length ? mk.reduce((a,b)=>b.p<a.p?b:a) : null, hi = mk.length ? mk.reduce((a,b)=>b.p>a.p?b:a) : null;
+      return {s, row:[A.products[s[2]], nm(A.rubros[s[4]]), A.units[s[3]], nf(s[5][mi]), pct(mom(s)), pct(yoy(s)), mi===last && s[7]!=null ? nf(s[7],1) : "—",
+        lo?`${lo.n} (${nf(lo.p)})`:"—", hi?`${hi.n} (${nf(hi.p)})`:"—", mk.length>=2?pct((hi.p/lo.p-1)*100,0):"—"]}; })
+    .sort((a,b)=>a.row[0].localeCompare(b.row[0],"es")).map(x=>x.row);
+  const cols = [tr("Producto","Product"),tr("Grupo","Group"),tr("Unidad","Unit"),tr("Precio RD$","Price RD$"),tr("Var. mensual","Monthly"),tr("Var. interanual","YoY"),tr("Volatilidad 12m","12m volatility"),tr("Más barato en","Cheapest in"),tr("Más caro en","Most expensive in"),tr("Dif. máx/mín","Max/min gap")];
+  $("#agTbl").innerHTML = table(cols, rows); bindCopy("cpyAg", cols, rows, tr("precios agropecuarios","agricultural prices")); bindFilters(D);
+  $("#toRegion").addEventListener("click", () => { state.f.inf_dim = "region"; navigate("inflacion", true); });
+}
+
+/* ---------- 9. Fuentes ---------- */
+function renderFuentes(el){
+  const ok = `<span class="status real">${tr("Automático","Automatic")}</span>`;
+  const hl = cpiSeries("headline"), fx = REAL.fx, fu = REAL.fuel, A = REAL.agri, E = REAL.elec;
+  const rows = [
+    [tr("Tipo de cambio USD/DOP (FX-001…009)","USD/DOP exchange rate (FX-001…009)"),"BCRD",tr("Diaria (días hábiles)","Daily (business days)"),`${fmtDate(fx.d[0])} – ${fmtDate(fx.d[fx.d.length-1])}`,ok],
+    [tr("IPC: general, mensual, interanual, acumulada, subyacente, por grupo y región (INF-001…006)","CPI: headline, monthly, YoY, YTD, core, by group and region (INF-001…006)"),"BCRD",tr("Mensual","Monthly"),`1984 – ${fmtMonth(hl.m[hl.m.length-1])} ${tr("(aquí desde 2018)","(shown since 2018)")}`,ok],
+    [tr("Canasta familiar por quintil y región (COL-001…003)","Family basket by quintile and region (COL-001…003)"),"BCRD",tr("Mensual","Monthly"),`2018 – ${fmtMonth(colSeg("national").m.slice(-1)[0])}`,ok],
+    [tr("Precios de combustibles (FUEL-001…012)","Fuel prices (FUEL-001…012)"),"MICM · datos.gob.do",tr("Semanal","Weekly"),`2010 – ${fmtDate(fu.e[fu.e.length-1])} ${tr("(aquí desde 2018)","(shown since 2018)")}`,ok],
+    [tr("Precios de productos (CON-001…005)","Basic-goods prices (CON-001…005)"),"Pro Consumidor · datos.gob.do",tr("Mensual (reporte trimestral)","Monthly (quarterly report)"),tr("jul – sep 2026","Jul – Sep 2026"),ok],
+    [tr("Electricidad: precio, pérdidas, CRI y tarifas (ENE-001…009)","Electricity: price, losses, CRI and tariffs (ENE-001…009)"),"MEM · SIE",tr("Mensual · trimestral","Monthly · quarterly"),`2020 – ${fmtMonth(E.m[E.m.length-1])}`,ok],
+    [tr("Precios agropecuarios (AGR-001…005, AGR-007)","Agricultural prices (AGR-001…005, AGR-007)"),tr("Ministerio de Agricultura · datos.gob.do","Ministry of Agriculture · datos.gob.do"),tr("Semanal","Weekly"),`${tr("ago","Aug")} 2017 – ${fmtMonth(A.m[A.m.length-1])}`,ok],
+  ];
+  el.insertAdjacentHTML("beforeend", `<section class="panel"><h2>${tr("Indicadores y estado de los datos","Indicators and data status")}</h2><p class="p-sub">${tr("Todos los indicadores se calculan con archivos oficiales que se descargan automáticamente y se procesan en Databricks.","Every indicator is calculated from official files that are downloaded automatically and processed in Databricks.")}</p>
+    ${table([tr("Indicador","Indicator"),tr("Fuente","Source"),tr("Frecuencia","Frequency"),tr("Cobertura","Coverage"),tr("Carga","Load")], rows)}
+    <div class="badges">${["bcrd","micm","pc","mem","ma","portal"].map(srcChip).join("")}</div></section>
+  <section class="panel"><h2>${tr("Arquitectura Medallion en Databricks","Medallion architecture on Databricks")}</h2>
+    <div class="medallion">
+      <div class="layer"><b>${tr("Descarga","Acquisition")}</b><p class="p-sub">${tr("Cada fuente se descarga automáticamente (API de datos.gob.do, sitios del BCRD y del MEM) a un archivo histórico que nunca se sobrescribe.","Each source is downloaded automatically (datos.gob.do API, BCRD and MEM sites) into an append-only archive that is never overwritten.")}</p></div>
+      <div class="layer"><b>Bronze</b><p class="p-sub">${tr("Auto Loader registra cada archivo nuevo una sola vez y lo guarda tal como se publicó, con trazabilidad (archivo, fila, lote, hash).","Auto Loader registers each new file once and stores it as published, with lineage (file, row, batch, hash).")}</p></div>
+      <div class="layer"><b>Silver</b><p class="p-sub">${tr("Datos tipados y validados. Reglas de calidad obligatorias; lo que falla se guarda aparte. Conciliación: Bronze = Silver + rechazados.","Typed and validated data. Enforced quality rules; failing records are kept apart. Reconciliation: Bronze = Silver + rejected.")}</p></div>
+      <div class="layer"><b>Gold</b><p class="p-sub">${tr("KPIs conciliados con los valores publicados por las fuentes. Alimentan esta web y Power BI.","KPIs reconciled with the values published by the sources. They feed this website and Power BI.")}</p></div>
+    </div></section>
+  <section class="panel"><h2>${tr("Reglas de lectura","How to read the data")}</h2><ul class="obs">
+    <li><span>${tr("Tipo de cambio: un aumento de la tasa significa <b>depreciación del peso</b>.","Exchange rate: a higher rate means <b>peso depreciation</b>.")}</span></li>
+    <li><span>${tr("Las diferencias entre tasas se expresan en <b>puntos porcentuales (pp)</b>; las variaciones de un valor, en <b>%</b>.","Differences between rates are in <b>percentage points (pp)</b>; changes of a value, in <b>%</b>.")}</span></li>
+    <li><span>${tr("Las ventanas sin historia suficiente (12 meses, 52 semanas) se muestran vacías en lugar de con valores parciales.","Windows without enough history (12 months, 52 weeks) are left empty instead of showing partial values.")}</span></li>
+    <li><span>${tr("Los nombres de productos y mercados se muestran como los publica la fuente.","Product and market names are shown as published by the source.")}</span></li>
+  </ul></section>`);
+}
+
+/* ===================== THEME & LANGUAGE ===================== */
+function loadPrefs(){ try{ return JSON.parse(localStorage.getItem("rdip.theme")||"{}"); }catch(e){ return {}; } }
+function savePrefs(p){ try{ localStorage.setItem("rdip.theme", JSON.stringify(p)); }catch(e){} }
+function applyTheme(redraw=true){
+  const p = loadPrefs(), root = document.documentElement;
+  if (p.theme && p.theme!=="auto") root.setAttribute("data-app-theme", p.theme); else root.removeAttribute("data-app-theme");
+  $("#themeSel").value = p.theme || "auto";
+  if (redraw) draw();
+}
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-t]").forEach(e => { const v = STATIC[e.dataset.t]; if (v) e.textContent = tr(v[0], v[1]); });
+  document.querySelectorAll(".lang-sw button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang===LANG)));
+  $("#side").setAttribute("aria-label", tr("Navegación principal","Main navigation"));
+  $("#flagImg").setAttribute("aria-label", tr("Bandera de República Dominicana","Flag of the Dominican Republic"));
+  $("#menuBtn").setAttribute("aria-label", tr("Abrir menú","Open menu"));
+  $("#themeBox").setAttribute("aria-label", tr("Apariencia","Appearance"));
+  $("#portfolioLink").href = `https://stanly06.github.io/?lang=${LANG}#rd-platform`;
+  $("#nav").innerHTML = PAGES.map(p => `${p.sep?'<li class="sep" role="separator"></li>':""}<li><button type="button" data-id="${p.id}" title="${L(p)}">${icon(p.icon)}<span class="nav-label">${L(p)}</span></button></li>`).join("");
+}
+document.querySelectorAll(".lang-sw button").forEach(b => b.addEventListener("click", () => {
+  LANG = b.dataset.lang; try{ localStorage.setItem("rdip.lang", LANG); localStorage.setItem("sf-lang", LANG); }catch(e){}
+  const u = new URL(location.href); u.searchParams.set("lang", LANG); history.replaceState(null, "", u.pathname + u.search + u.hash);
+  applyLang(); navigate(state.page);
+}));
+$("#themeSel").addEventListener("change", e => { const p = loadPrefs(); p.theme = e.target.value; savePrefs(p); applyTheme(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => applyTheme());
+
+/* ===================== BOOT ===================== */
+$("#nav").addEventListener("click", e => { const b = e.target.closest("button[data-id]"); if (b) navigate(b.dataset.id, true); });
+$("#collapseBtn").addEventListener("click", () => { const c = $("#app").classList.toggle("collapsed"); $("#collapseBtn").setAttribute("aria-expanded", String(!c)); setTimeout(()=>charts.forEach(ch=>ch.resize()),50); });
+$("#menuBtn").addEventListener("click", () => $("#app").classList.toggle("menu-open"));
+document.addEventListener("keydown", e => { if (e.key==="Escape") $("#app").classList.remove("menu-open"); });
+let start = location.hash.slice(1); if (!PAGES.some(p=>p.id===start)) { try{ start = localStorage.getItem("rdip.page") || "panorama"; }catch(e){ start = "panorama"; } }
+state.page = PAGES.some(p=>p.id===start) ? start : "panorama";
+applyLang(); applyTheme(false); navigate(state.page);

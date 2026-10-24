@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RD Intelligence Platform</title>
+<meta name="description" content="RD Economic & Financial Intelligence Platform: Dominican exchange rate, inflation, cost of living, fuel, consumer, electricity and agricultural prices from official sources, built on a Databricks lakehouse. Portfolio project by Stanly Fernández.">
+<meta property="og:title" content="RD Economic & Financial Intelligence Platform">
+<meta property="og:description" content="Official Dominican economic and price data · Databricks Medallion lakehouse · Power BI · by Stanly Fernández">
+<meta property="og:image" content="https://stanly06.github.io/og-image.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'%3E%3Crect width='30' height='20' fill='%23fff'/%3E%3Crect width='13' height='8' fill='%23002D62'/%3E%3Crect x='17' width='13' height='8' fill='%23CE1126'/%3E%3Crect y='12' width='13' height='8' fill='%23CE1126'/%3E%3Crect x='17' y='12' width='13' height='8' fill='%23002D62'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/*__CSS__*/
+/* v8 additions: language switch, source chips, header links */
+.top-tools{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.lang-sw{display:inline-flex;padding:3px;border-radius:10px;border:1px solid var(--border);background:var(--card);gap:2px}
+.lang-sw button{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:12px;padding:5px 10px;border-radius:7px;cursor:pointer;letter-spacing:.04em}
+.lang-sw button[aria-pressed="true"]{background:var(--primary);color:#fff}
+.top-links{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.top-links a{text-decoration:none}
+.src-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:3px 10px 3px 6px;background:var(--card);text-decoration:none}
+.src-chip svg{width:16px;height:16px;color:var(--primary)}
+.src-chip:hover{border-color:var(--primary);color:var(--text)}
+.badge a{color:inherit}
+.panel .btn.link,.btn.link{align-self:flex-start}
+.btn svg{width:15px;height:15px;flex:none}
+@media (max-width:820px){.top-tools{align-items:flex-start;width:100%}.top-links{justify-content:flex-start}}
+html,body{margin:0}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <svg class="flag" viewBox="0 0 30 20" role="img" id="flagImg"><use href="#flag"/></svg>
+      <div class="brand-text"><b>RD Intelligence Platform</b><small>Economic &amp; Financial Intelligence</small></div>
+    </div>
+    <ul class="nav" id="nav"></ul>
+    <div class="side-foot">
+      <button class="collapse-btn" id="collapseBtn" type="button" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg><span class="side-foot-text" data-t="collapse"></span></button>
+      <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span class="side-foot-text" data-t="byline"></span></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="tricolor" aria-hidden="true"></div>
+    <header class="topbar">
+      <div style="min-width:0">
+        <div class="crumb"><button class="btn menu-btn" id="menuBtn" type="button">☰</button><svg viewBox="0 0 30 20" aria-hidden="true"><use href="#flag"/></svg><span data-t="platform"></span><span>/</span><span id="crumbPage"></span></div>
+        <h1 id="pageTitle"></h1>
+        <p class="lead" id="pageLead"></p>
+        <div class="badges" id="pageBadges"></div>
+      </div>
+      <div class="top-tools">
+        <div class="lang-sw" role="group" aria-label="Idioma / Language">
+          <button type="button" data-lang="es" title="Español">ES</button>
+          <button type="button" data-lang="en" title="English">EN</button>
+        </div>
+        <div class="theme-box" role="group" id="themeBox">
+          <label for="themeSel"><span data-t="theme"></span>
+            <select id="themeSel">
+              <option value="auto" data-t="themeAuto"></option>
+              <option value="dom" data-t="themeDom"></option>
+              <option value="fi">Financial Intelligence</option>
+            </select>
+          </label>
+        </div>
+        <div class="top-links">
+          <a class="btn" href="https://github.com/Stanly06/rd-economic-financial-intelligence" target="_blank" rel="noreferrer"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg><span data-t="repo"></span></a>
+          <a class="btn" id="portfolioLink" href="https://stanly06.github.io/#rd-platform"><span data-t="portfolio"></span></a>
+        </div>
+      </div>
+    </header>
+    <main class="content" id="content" tabindex="-1"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="flag" viewBox="0 0 30 20">
+      <rect width="30" height="20" fill="#FFFFFF"/>
+      <rect x="0" y="0" width="13" height="8" fill="#002D62"/>
+      <rect x="17" y="0" width="13" height="8" fill="#CE1126"/>
+      <rect x="0" y="12" width="13" height="8" fill="#CE1126"/>
+      <rect x="17" y="12" width="13" height="8" fill="#002D62"/>
+      <path d="M13.9 8.6h2.2v1.9c0 .7-.5 1.1-1.1 1.4-.6-.3-1.1-.7-1.1-1.4z" fill="#002D62" stroke="#CE1126" stroke-width=".25"/>
+      <path d="M13.2 9.2c-.3 1.4.4 2.6 1.8 3M16.8 9.2c.3 1.4-.4 2.6-1.8 3" fill="none" stroke="#2E7D32" stroke-width=".35"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const REAL = /*__REAL_DATA__*/;
+/*__APP__*/
+</script>
+</body>
+</html>
