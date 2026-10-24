@@ -24,7 +24,7 @@
   "tasks": [
     {
       "task_key": "bronze_bcrd_exchange_rates",
-      "description": "Load the BCRD USD/DOP Excel from the raw Volume into bronze.bcrd_exchange_rates_daily",
+      "description": "Auto Loader: register new BCRD USD/DOP workbooks and capture each as a snapshot in bronze.bcrd_exchange_rates_daily",
       "notebook_task": {
         "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Bronze",
         "source": "WORKSPACE"
@@ -67,7 +67,7 @@
     },
     {
       "task_key": "bronze_bcrd_cpi",
-      "description": "Capture the 6 BCRD CPI and family-basket workbooks row by row into bronze.bcrd_cpi_raw_rows",
+      "description": "Auto Loader: register new BCRD CPI and family-basket workbooks and capture each row by row as a snapshot in bronze.bcrd_cpi_raw_rows",
       "notebook_task": {
         "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Bronze",
         "source": "WORKSPACE"

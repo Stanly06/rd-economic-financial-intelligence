@@ -92,11 +92,11 @@ Design rules applied:
 - Every row carries lineage metadata: source file, path, sheet, source row number, file size and modification time, report period, batch ID and ingestion timestamp.
 - A structural contract stops the load if the BCRD file layout changes.
 - Data-quality checks are observational in Bronze: they report and never filter.
-- Re-runs are idempotent per source file: previously loaded rows from the same file are replaced, not duplicated.
+- Incremental with Auto Loader: each workbook archived in `bcrd_raw/exchange_rates/<yyyy>/<mm>/` is registered once (`bronze.bcrd_exchange_rates_files`) and captured as one snapshot. Re-runs capture nothing new. Each BCRD file covers only the last five years, so keeping every snapshot lets the history grow beyond that window.
 
 **Technical finding:** Databricks Free Edition serverless compute does not include `openpyxl`, which pandas requires to read `.xlsx` files. Every Excel-based ingestion notebook installs a pinned version (`openpyxl==3.1.5`) in its first code cell.
 
-**Important:** This is a development implementation, not a production pipeline. Incremental loading with Auto Loader is implemented for MICM, Pro Consumidor and MEM electricity (shared helper `src/shared/ingestion.py`); BCRD is next.
+**Important:** This is a development implementation, not a production pipeline. Incremental loading with Auto Loader is implemented for all Bronze pipelines (shared helper `src/shared/ingestion.py`).
 
 ### Silver Layer Status
 
@@ -113,7 +113,7 @@ Design rules applied:
 - Enforced rules: valid date, positive buy and sell rates, buy rate not above sell rate, one row per date. Failing rows go to `quality.dq_rejected_records`; they are never silently dropped.
 - Delta table constraints (`NOT NULL` and `CHECK`) protect the table from future invalid writes.
 - Every run logs rule results in `quality.dq_rule_results`. Table and column descriptions are stored in Unity Catalog.
-- Load pattern: full refresh from Bronze (idempotent). To be revisited when incremental ingestion is added.
+- Load pattern: full refresh from all Bronze snapshots (idempotent). For each date the newest archived file wins; the same date in an older file is `superseded_by_newer_file` (observational). Reconciliation: Bronze = Silver + rejected + superseded (verified with two snapshots: 2,506 = 1,253 + 0 + 1,253).
 
 **Data finding:** six gaps of five calendar days between published rates. All match Dominican public holidays when BCRD does not publish (Holy Week in 2022–2026, and Altagracia/Duarte days in January 2022). No data is missing. This confirms KPI decision D3: moving averages count business-day observations, not calendar days.
 
@@ -143,7 +143,7 @@ Validation results (all passed):
 
 | Layer | Notebook | Output | Result |
 |---|---|---|---|
-| Bronze | [02_BCRD_CPI_Bronze](../src/bronze/02_BCRD_CPI_Bronze.ipynb) | `bronze.bcrd_cpi_raw_rows` | 1,843 rows from 6 workbooks, captured as published |
+| Bronze | [02_BCRD_CPI_Bronze](../src/bronze/02_BCRD_CPI_Bronze.ipynb) | `bronze.bcrd_cpi_raw_rows` | 1,843 rows from 6 workbooks, captured as published; Auto Loader register `bronze.bcrd_cpi_files`, one snapshot per workbook, Silver uses the newest per dataset (verified with a second snapshot) |
 | Silver | [02_BCRD_CPI_Silver](../src/silver/02_BCRD_CPI_Silver.ipynb) | 5 tables (below) | 6,476 records, 0 rejected, all rules passed |
 | Gold | [02_BCRD_CPI_Gold](../src/gold/02_BCRD_CPI_Gold.ipynb) | `gold.inflation_metrics` | 5,568 rows, INF-001 to INF-006 |
 | Gold | [03_BCRD_Cost_of_Living_Gold](../src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) | `gold.cost_of_living_metrics` | 908 rows, COL-001 to COL-003 |

@@ -44,16 +44,17 @@ The platform only includes Dominican data. International data is allowed only as
 **Databricks setup** (in [`src/setup/`](src/setup/), implemented and verified)
 - Unity Catalog catalog `rd_economic_intelligence`.
 - Schemas `bronze`, `silver`, `gold`, `metadata` and `quality`.
-- Raw landing Volumes per source (`bcrd_raw`, `micm_raw`, `proconsumidor_raw`, `agriculture_raw`) with folders per dataset.
+- Raw landing Volumes per source (`bcrd_raw`, `micm_raw`, `proconsumidor_raw`, `mem_raw`, `agriculture_raw`) with folders per dataset. Each dataset folder is an append-only archive with one subfolder per arrival month (`<yyyy>/<mm>/`); files are never overwritten.
+- **Incremental ingestion:** every Bronze notebook uses **Auto Loader** (`cloudFiles`, `binaryFile`, `trigger(availableNow=True)`) through [`src/shared/ingestion.py`](src/shared/ingestion.py). A checkpoint records which files were already seen, a file register table (`bronze.*_files`) keeps path, size, modification time and SHA-256, and each new file is captured once as a Bronze snapshot.
 
 **Bronze ingestion** (in [`src/bronze/`](src/bronze/), development)
-- [`01_BCRD_Exchange_Rates_Bronze`](src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) loads the official BCRD daily USD/DOP file into `bronze.bcrd_exchange_rates_daily`: 1,253 rows (2021-09-20 to 2026-09-18), source values preserved, lineage metadata per row (file, sheet, source row, batch ID, ingestion timestamp), structural contract check, observational data-quality checks and idempotent re-runs. All quality checks passed on the first load.
+- [`01_BCRD_Exchange_Rates_Bronze`](src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) loads the official BCRD daily USD/DOP file into `bronze.bcrd_exchange_rates_daily`: 1,253 rows (2021-09-20 to 2026-09-18), source values preserved, lineage metadata per row (file, sheet, source row, batch ID, ingestion timestamp), structural contract check, observational data-quality checks and incremental capture with Auto Loader (each archived file loaded once). All quality checks passed on the first load.
 **Silver transformation** (in [`src/silver/`](src/silver/), development)
 - [`01_BCRD_Exchange_Rates_Silver`](src/silver/01_BCRD_Exchange_Rates_Silver.ipynb) builds `silver.bcrd_exchange_rates_daily`: typed, validated and deduplicated USD/DOP rates (1,253 business days, 0 rejected), enforced data-quality rules with a rejected-records log in the `quality` schema, Delta `CHECK` constraints, and Unity Catalog column documentation.
 **Gold KPIs** (in [`src/gold/`](src/gold/), development)
 - [`01_BCRD_Exchange_Rates_Gold`](src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) calculates foreign-exchange KPIs FX-001 to FX-009 into `gold.exchange_rate_metrics` (daily) and `gold.exchange_rate_monthly_metrics` (monthly). Results reconcile with BCRD official appreciation/depreciation values on 2,358 of 2,358 comparable days.
 **CPI and family basket** (development)
-- [`02_BCRD_CPI_Bronze`](src/bronze/02_BCRD_CPI_Bronze.ipynb) captures the six BCRD CPI and basket workbooks row by row as published (`bronze.bcrd_cpi_raw_rows`).
+- [`02_BCRD_CPI_Bronze`](src/bronze/02_BCRD_CPI_Bronze.ipynb) captures the six BCRD CPI and basket workbooks row by row as published (`bronze.bcrd_cpi_raw_rows`, one snapshot per workbook); Silver uses the newest snapshot of each dataset.
 - [`02_BCRD_CPI_Silver`](src/silver/02_BCRD_CPI_Silver.ipynb) parses each presentation layout with reusable parsers in [`src/shared/`](src/shared/bcrd_cpi_parsers.py) into five tidy monthly tables (national, core, 12 expenditure groups, 4 regions, family basket). 6,476 records, 0 rejected.
 - [`02_BCRD_CPI_Gold`](src/gold/02_BCRD_CPI_Gold.ipynb) calculates inflation KPIs INF-001 to INF-006 into `gold.inflation_metrics`, reconciled with BCRD published variations (monthly 5,550/5,550; 12-month and year-to-date 808/808).
 - [`03_BCRD_Cost_of_Living_Gold`](src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) calculates cost-of-living KPIs COL-001 to COL-003 into `gold.cost_of_living_metrics`.
