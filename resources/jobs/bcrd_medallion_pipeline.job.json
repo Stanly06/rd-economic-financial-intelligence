@@ -126,7 +126,7 @@
     },
     {
       "task_key": "bronze_micm_fuel_prices",
-      "description": "Capture the MICM weekly fuel-price XLSX (authoritative) and CSV into bronze.micm_fuel_prices_raw",
+      "description": "Auto Loader: register new MICM fuel-price files (XLSX authoritative, CSV for reconciliation) and capture each as a snapshot in bronze.micm_fuel_prices_raw",
       "notebook_task": {
         "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/04_MICM_Fuel_Prices_Bronze",
         "source": "WORKSPACE"

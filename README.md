@@ -59,7 +59,7 @@ The platform only includes Dominican data. International data is allowed only as
 - [`03_BCRD_Cost_of_Living_Gold`](src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) calculates cost-of-living KPIs COL-001 to COL-003 into `gold.cost_of_living_metrics`.
 
 **MICM fuel prices** (development)
-- [`04_MICM_Fuel_Prices_Bronze`](src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) captures the weekly XLSX and CSV row by row (`bronze.micm_fuel_prices_raw`, 872 weeks each).
+- [`04_MICM_Fuel_Prices_Bronze`](src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) ingests incrementally with **Auto Loader** (shared helper): each XLSX and CSV archived in `micm_raw/fuel_prices/<yyyy>/<mm>/` is registered once (`bronze.micm_fuel_files`) and captured row by row as one snapshot (`bronze.micm_fuel_prices_raw`, 872 weeks each). Silver uses the newest file of each format, since each carries the full series.
 - [`04_MICM_Fuel_Prices_Silver`](src/silver/04_MICM_Fuel_Prices_Silver.ipynb) resolves the price weeks with [`src/shared/micm_parsers.py`](src/shared/micm_parsers.py) and builds `silver.micm_fuel_prices_weekly` (22 fuels, 2010-01-02 to 2026-08-28, 19,096 rows). XLSX is authoritative: every CSV value equals the XLSX value rounded to whole pesos. Zero prices are treated as not published; four weeks published twice (December 2023) keep the later file row.
 - [`04_MICM_Fuel_Prices_Gold`](src/gold/04_MICM_Fuel_Prices_Gold.ipynb) calculates FUEL-001 to FUEL-012 into `gold.fuel_price_metrics` (15,296 rows).
 

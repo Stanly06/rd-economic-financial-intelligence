@@ -9,7 +9,7 @@
 
 - `precios-de-combustibles-2010-2026.csv` — original downloaded file, semicolon-delimited, Windows-1252-compatible encoding.
 - `precios-de-combustibles-2010-2026.xlsx` — original downloaded spreadsheet; retain separately for source-value reconciliation.
-- Do not commit original source data to the public repository until publication rights, licensing, and repository data policy are reviewed. Preserve originals in the controlled raw landing area.
+- Do not commit original source data to the public repository until publication rights, licensing, and repository data policy are reviewed. Originals are preserved in the append-only archive `bronze.micm_raw/fuel_prices/<yyyy>/<mm>/` (one folder per arrival month, never overwritten).
 
 ## Verified CSV profiling
 

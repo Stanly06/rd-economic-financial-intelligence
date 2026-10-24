@@ -96,7 +96,7 @@ Design rules applied:
 
 **Technical finding:** Databricks Free Edition serverless compute does not include `openpyxl`, which pandas requires to read `.xlsx` files. Every Excel-based ingestion notebook installs a pinned version (`openpyxl==3.1.5`) in its first code cell.
 
-**Important:** This is a development implementation, not a production pipeline. Incremental loading with Auto Loader is implemented for Pro Consumidor and MEM electricity (shared helper `src/shared/ingestion.py`); BCRD and MICM are next.
+**Important:** This is a development implementation, not a production pipeline. Incremental loading with Auto Loader is implemented for MICM, Pro Consumidor and MEM electricity (shared helper `src/shared/ingestion.py`); BCRD is next.
 
 ### Silver Layer Status
 
@@ -167,7 +167,7 @@ Reconciliation with BCRD published values (all passed): monthly variation 5,550/
 
 | Layer | Notebook | Output | Result |
 |---|---|---|---|
-| Bronze | [04_MICM_Fuel_Prices_Bronze](../src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) | `bronze.micm_fuel_prices_raw` | 872 XLSX + 872 CSV rows, all source columns kept as JSON |
+| Bronze | [04_MICM_Fuel_Prices_Bronze](../src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) | `bronze.micm_fuel_prices_raw` | Auto Loader (`*.{xlsx,csv}`), one snapshot per archived file: 872 XLSX + 872 CSV rows, all source columns kept as JSON. Verified: a rerun captures nothing; a newer file with another name is captured alone and Silver uses only it (19,096 rows, no duplicated weeks) |
 | Silver | [04_MICM_Fuel_Prices_Silver](../src/silver/04_MICM_Fuel_Prices_Silver.ipynb) | `silver.micm_fuel_prices_weekly` | 19,096 rows, 22 fuels, 2010-01-02 to 2026-08-28; 4 superseded weeks rejected |
 | Gold | [04_MICM_Fuel_Prices_Gold](../src/gold/04_MICM_Fuel_Prices_Gold.ipynb) | `gold.fuel_price_metrics` | 15,296 rows, FUEL-001 to FUEL-012 |
 | Bronze | [05_ProConsumidor_Prices_Bronze](../src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) | `bronze.proconsumidor_files`, `bronze.proconsumidor_prices_raw` | Auto Loader, one snapshot per archived workbook: 600 rows plus the report-period title. Verified: a rerun captures nothing; a second report with the same file name is captured alone |
