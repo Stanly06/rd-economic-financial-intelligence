@@ -22,7 +22,7 @@ The documentation follows the complete project lifecycle, from business discover
 | 10 | Databricks Environment Setup | In Progress — Initial infrastructure validated |
 | 11 | Bronze Layer | In Progress — first pipeline (BCRD USD/DOP) implemented in development |
 | 12 | Silver Layer | In Progress — first transformation (BCRD USD/DOP) implemented in development |
-| 13 | Gold Layer | Planned |
+| 13 | Gold Layer | In Progress — first KPI model (USD/DOP, FX-001 to FX-009) implemented in development |
 | 14 | Databricks Workflows | Planned |
 | 15 | Monitoring & Data Quality | Planned |
 | 16 | Databricks SQL Analytics | Planned |
@@ -116,6 +116,26 @@ Design rules applied:
 - Load pattern: full refresh from Bronze (idempotent). To be revisited when incremental ingestion is added.
 
 **Data finding:** six gaps of five calendar days between published rates. All match Dominican public holidays when BCRD does not publish (Holy Week in 2022–2026, and Altagracia/Duarte days in January 2022). No data is missing. This confirms KPI decision D3: moving averages count business-day observations, not calendar days.
+
+### Gold Layer Status
+
+**Implementation status:** First Gold KPI model implemented and verified in development. The USD/DOP pipeline now runs end to end: Raw → Bronze → Silver → Gold.
+
+| Pipeline | Target table | Grain | KPIs | Rows |
+|---|---|---|---|---|
+| [01_BCRD_Exchange_Rates_Gold](../src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) | `gold.exchange_rate_metrics` | Date × currency pair × rate type | FX-001, FX-002, FX-003, FX-006, FX-007, FX-008, FX-009 | 2,506 |
+| [01_BCRD_Exchange_Rates_Gold](../src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) | `gold.exchange_rate_monthly_metrics` | Month × currency pair × rate type | FX-004, FX-005, month-end FX-006 | 122 |
+
+Daily and monthly KPIs live in separate tables so BI tools never aggregate monthly values over daily rows.
+
+Validation results (all passed):
+
+- Row count equals Silver × 2 rate types; one row per date, currency pair and rate type.
+- Moving-average and 52-week values are NULL exactly when their window is incomplete (KPI decision D4).
+- 52-week low never exceeds the high, and every rate falls inside its 52-week range.
+- **Reconciliation with BCRD official values:** our YTD change, restated with the BCRD reciprocal method, matches the published BCRD accumulated appreciation/depreciation on **2,358 of 2,358** comparable days (tolerance 0.15 points for BCRD's one-decimal rounding). This confirms the calculation logic and the sign convention of decision D1.
+
+**Data finding:** the source extract starts on 2021-09-20 and ends on 2026-09-18, so the first and last months do not cover a full month. They are flagged with `is_partial_month` so dashboards can label them as month-to-date. Full 52-week windows start on 2022-09-19 and full year-over-year values in September 2022.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -698,7 +718,7 @@ Business Discovery       ██████████  COMPLETE
 Source Assessment        ██████████  COMPLETE
 Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
-Databricks Engineering   ███░░░░░░░  IN PROGRESS (setup + first Bronze and Silver pipelines)
+Databricks Engineering   ████░░░░░░  IN PROGRESS (USD/DOP end-to-end: Bronze, Silver, Gold)
 Analytics & BI           ░░░░░░░░░░  PLANNED
 ```
 
