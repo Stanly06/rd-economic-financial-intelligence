@@ -1,6 +1,6 @@
 {
   "name": "rd_mem_electricity_weekly",
-  "description": "Weekly check for a new MEM Informe de Desempeño annex. If a new file was published, it is landed and Bronze, Silver and Gold electricity tables (ENE-001..009) are rebuilt; otherwise the run stops after the check.",
+  "description": "PAUSED (superseded): the main job rd_economic_medallion_pipeline now runs every Monday and includes the MEM download, Bronze, Silver and Gold tasks. Kept for on-demand electricity-only runs. Weekly check for a new MEM Informe de Desempeño annex. If a new file was published, it is landed and Bronze, Silver and Gold electricity tables (ENE-001..009) are rebuilt; otherwise the run stops after the check.",
   "tags": {
     "project": "rd-economic-intelligence",
     "source": "mem",
@@ -19,7 +19,7 @@
   "schedule": {
     "quartz_cron_expression": "0 23 7 ? * MON",
     "timezone_id": "America/Santo_Domingo",
-    "pause_status": "UNPAUSED"
+    "pause_status": "PAUSED"
   },
   "tasks": [
     {

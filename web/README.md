@@ -15,6 +15,8 @@ Pages: economic overview, inflation & CPI, exchange rate (since 1991), family ba
 
 ## Refresh
 
+**Automatic:** every Monday the Databricks job writes the export (task `export_web_platform_data`) and the portfolio workflow [`refresh-rd-platform.yml`](https://github.com/Stanly06/Stanly06.github.io/blob/main/.github/workflows/refresh-rd-platform.yml) rebuilds and publishes the page if the data changed. Manual steps:
+
 1. Run [`src/exports/08_Web_Platform_Export`](../src/exports/08_Web_Platform_Export.ipynb) in Databricks (writes `gold/web_exports/rd_platform_data.json`).
 2. `databricks fs cp dbfs:/Volumes/rd_economic_intelligence/gold/web_exports/rd_platform_data.json data.json`
 3. `python web/build.py data.json dist` and publish the contents of `dist/` to the portfolio site (`rd-intelligence/`).
