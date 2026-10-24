@@ -89,7 +89,7 @@ const srcChip = k => `<a class="src-chip" href="${SRC[k].u}" target="_blank" rel
 /* ===================== CHARTS ===================== */
 let charts = [];
 function destroyCharts(){ charts.forEach(c=>c.destroy()); charts = []; }
-function chartDefaults(){ Chart.defaults.font.family = css("--font-body"); Chart.defaults.color = css("--muted"); Chart.defaults.borderColor = css("--grid"); }
+function chartDefaults(){ Chart.defaults.animation = false; Chart.defaults.font.family = css("--font-body"); Chart.defaults.color = css("--muted"); Chart.defaults.borderColor = css("--grid"); }
 function lineChart(el, labels, datasets, {yFmt = v=>nf(v,2), yTitle="", stepped=false, zero=false}={}){
   const c = new Chart(document.getElementById(el), { type:"line",
     data:{ labels, datasets: datasets.map((d,i)=>({ label:d.label, data:d.data, borderColor:css(d.color), backgroundColor:css(d.color)+"22",
@@ -136,7 +136,7 @@ function navigate(id, focus){
   $("#app").classList.remove("menu-open");
   draw(); if (focus) $("#content").focus({preventScroll:true});
 }
-function draw(){ destroyCharts(); chartDefaults(); const p = PAGES.find(x=>x.id===state.page); const el = $("#content"); el.innerHTML=""; el.classList.remove("fade"); void el.offsetWidth; el.classList.add("fade"); p.render(el); el.insertAdjacentHTML("beforeend", footer()); }
+function draw(){ if (!REAL) return; destroyCharts(); chartDefaults(); const p = PAGES.find(x=>x.id===state.page); const el = $("#content"); el.innerHTML=""; el.classList.remove("fade"); void el.offsetWidth; el.classList.add("fade"); p.render(el); el.insertAdjacentHTML("beforeend", footer()); }
 function footer(){ return `<div class="footer"><span><svg viewBox="0 0 30 20"><use href="#flag"/></svg>RD Intelligence Platform · ${tr("Proyecto de portafolio de","Portfolio project by")} <a href="https://stanly06.github.io/" style="color:inherit">Stanly Fernández</a></span><span>${tr("Fuentes","Sources")}: BCRD · MICM · Pro Consumidor · MEM · ${tr("Ministerio de Agricultura","Ministry of Agriculture")} · ${tr("Datos actualizados","Data updated")} ${fmtDate(REAL.generated.slice(0,10))}</span></div>`; }
 function filterBar(html, pageId){ return `<form class="filters" onsubmit="return false" aria-label="${tr("Filtros","Filters")}">${html}<span class="spacer"></span><button class="btn" type="button" data-reset="${pageId}">${tr("Restablecer filtros","Reset filters")}</button></form>`; }
 function sel(id,label,opts,val){ return `<label for="${id}">${label}<select id="${id}">${opts.map(([v,t])=>`<option value="${v}" ${String(v)===String(val)?"selected":""}>${t}</option>`).join("")}</select></label>`; }
@@ -151,14 +151,15 @@ function addMonths(d, k){ const dt = new Date(d+"T00:00:00Z"); dt.setUTCMonth(dt
 function lastIndexBefore(arr, d){ let i = arr.findIndex(x => x >= d); return Math.max(0, i-1); }
 
 /* ---------- agriculture helpers ---------- */
-const AG = (() => {
+let AG = null;
+function buildAG(){
   const A = REAL.agri, mk = n => A.markets.indexOf(n);
   const ALL = mk("Promedio mercados"), WH = mk("Mayorista");
   const byKey = {}; A.s.forEach(s => { (byKey[s[2]+"|"+s[3]] ||= {})[s[1]] = s; });
   const retailMarkets = A.markets.map((n,i)=>[n,i]).filter(([n,i]) => i!==ALL && i!==WH);
   const rub = (c, r) => A.rub.find(x => x.c === c && x.r === r);
-  return { A, ALL, WH, byKey, retailMarkets, rub };
-})();
+  AG = { A, ALL, WH, byKey, retailMarkets, rub };
+}
 
 /* ---------- 1. Panorama ---------- */
 function renderPanorama(el){
@@ -168,15 +169,13 @@ function renderPanorama(el){
   const prem = REAL.fuel.f[0], pn = prem.values.length-1;
   const fxMonthAgoIdx = Math.max(0, fx.d.findIndex(d => d >= addMonths(fx.d[fn],-1)));
   const fxM = (fx.s[fn]/fx.s[fxMonthAgoIdx]-1)*100;
-  const A = AG.A, am = A.m.length-1;
-  const ag = A.s.filter(s => s[0]===0 && s[1]===AG.ALL && s[5][am]!=null && s[5][am-1]!=null).map(s => (s[5][am]/s[5][am-1]-1)*100);
-  const agAvg = ag.reduce((a,b)=>a+b,0)/ag.length, agUp = ag.filter(v=>v>0).length;
+  const AS = REAL.agriSum, agAvg = AS.mom, agUp = AS.up;
   el.insertAdjacentHTML("beforeend", `<section class="kpis">
     ${kpi({icon:"pct",label:tr("Inflación interanual","Year-over-year inflation"),value:`${nf(hl.yo[n])} %`,sub:fmtMonth(hl.m[n]),delta:hl.yo[n]-hl.yo[n-1],deltaText:`${pp(hl.yo[n]-hl.yo[n-1])} ${tr("vs. mes anterior","vs. previous month")}`,tag:"BCRD",sparkVals:lastN(hl.yo,12)})}
     ${kpi({icon:"fx",label:tr("Tasa USD/DOP · venta","USD/DOP rate · sell"),value:`RD$${nf(fx.s[fn],2)}`,sub:fmtDate(fx.d[fn]),delta:fxM,deltaText:`${pct(fxM)} ${tr("en un mes (↑ = depreciación)","in one month (↑ = peso depreciation)")}`,tag:"BCRD",sparkVals:lastN(fx.s,120),sparkVar:"--s2"})}
     ${kpi({icon:"cart",label:tr("Canasta familiar nacional","National family basket"),value:`RD$${nf(nat.c[cn],0)}`,sub:`${fmtMonth(nat.m[cn])} · ${tr("mensual","per month")}`,delta:nat.y[cn],deltaText:`${pct(nat.y[cn])} ${tr("interanual","year over year")}`,tag:"BCRD",sparkVals:lastN(nat.c,12),sparkVar:"--s3"})}
     ${kpi({icon:"fuel",label:nm("Gasolina premium"),value:`RD$${nf(prem.values[pn])}`,sub:`${tr("Por galón · semana","Per gallon · week of")} ${fmtDate(REAL.fuel.w[pn])}`,delta:prem.values[pn]-prem.values[pn-1],deltaText:prem.values[pn]===prem.values[pn-1]?tr("Sin cambio semanal","No weekly change"):pct((prem.values[pn]/prem.values[pn-1]-1)*100),tag:"MICM",sparkVals:lastN(prem.values,26),sparkVar:"--s5"})}
-    ${kpi({icon:"sprout",label:tr("Precios agropecuarios minoristas","Retail agricultural prices"),value:pct(agAvg),sub:`${tr("Variación mensual promedio","Average monthly change")} · ${fmtMonth(A.m[am])}`,delta:agAvg,deltaText:`${agUp} ${tr("de","of")} ${ag.length} ${tr("productos suben","products up")}`,tag:tr("Min. Agricultura","Min. of Agriculture")})}
+    ${kpi({icon:"sprout",label:tr("Precios agropecuarios minoristas","Retail agricultural prices"),value:pct(agAvg),sub:`${tr("Variación mensual promedio","Average monthly change")} · ${fmtMonth(AS.m)}`,delta:agAvg,deltaText:`${agUp} ${tr("de","of")} ${AS.n} ${tr("productos suben","products up")}`,tag:tr("Min. Agricultura","Min. of Agriculture")})}
   </section>
   <section class="grid2">
     <div class="panel"><div class="p-head"><div><h2>${tr("Evolución de la inflación","Inflation trend")}</h2><p class="p-sub">${tr("Variación interanual (%) · últimos 24 meses · general y subyacente","Year-over-year change (%) · last 24 months · headline and core")}</p></div>${real()}</div><div class="chart"><canvas id="c1"></canvas></div></div>
@@ -195,7 +194,7 @@ function renderPanorama(el){
   const ye = lastIndexBefore(fx.d, fx.d[fn].slice(0,4)+"-01-01"), fxYtd = (fx.s[fn]/fx.s[ye]-1)*100;
   const regs = REAL.col.filter(s=>s.t==="region").map(s=>({n:nm(s.n),v:s.c[s.c.length-1]})).sort((a,b)=>b.v-a.v);
   const groups = REAL.cpi.filter(s=>s.t==="expenditure_group").map(s=>({n:nm(s.n),v:s.yo[s.yo.length-1]})).sort((a,b)=>b.v-a.v);
-  const rubs = A.rub.filter(r=>r.c==="retail").map(r=>({n:nm(r.r),v:r.yoy[r.yoy.length-1],m:r.m[r.m.length-1]})).filter(r=>r.v!=null && r.m===A.m[am]).sort((a,b)=>b.v-a.v);
+  const rubs = AS.rubYoy.map(r=>({n:nm(r[0]),v:r[1]})).sort((a,b)=>b.v-a.v);
   const yr = fx.d[fn].slice(0,4);
   $("#obs").innerHTML = [
     tr(`La inflación interanual se ubicó en <b>${nf(hl.yo[n])} %</b> en ${fmtMonth(hl.m[n])}, ${hl.yo[n]>=hl.yo[n-1]?"por encima":"por debajo"} del mes anterior (${pp(hl.yo[n]-hl.yo[n-1])}). La subyacente fue <b>${nf(core.yo[core.yo.length-1])} %</b>.`,
@@ -253,8 +252,8 @@ function renderCambiario(el){
   el.insertAdjacentHTML("beforeend", filterBar(
     sel("fx_period",tr("Período","Period"),[["90",tr("Últimos 3 meses","Last 3 months")],["180",tr("Últimos 6 meses","Last 6 months")],["365",tr("Último año","Last year")],["1826",tr("Últimos 5 años","Last 5 years")],["0",tr("Todo (desde 1991)","All (since 1991)")]],period)+
     sel("fx_type",tr("Tasa","Rate"),[["both",tr("Compra y venta","Buy and sell")],["s",tr("Solo venta","Sell only")],["b",tr("Solo compra","Buy only")]],type),"cambiario"));
-  const fx = REAL.fx, n = fx.d.length-1, last = fx.d[n];
-  const startD = period ? addMonths(last, -Math.round(period/30.4)) : fx.d[0];
+  const fx = REAL.fx, FM = REAL.fxm, n = fx.d.length-1, last = fx.d[n];
+  const startD = period ? addMonths(last, -Math.round(period/30.4)) : FM.m[0]+"-01";
   const idx = fx.d.map((d,i)=>[d,i]).filter(([d])=>d>=startD).map(([,i])=>i);
   const ye = lastIndexBefore(fx.d, last.slice(0,4)+"-01-01");
   const win = fx.d.map((d,i)=>[d,i]).filter(([d])=>d>addMonths(last,-12)).map(([,i])=>fx.s[i]);
@@ -266,25 +265,26 @@ function renderCambiario(el){
     ${kpi({icon:"fx",label:tr("Rango 52 semanas (venta)","52-week range (sell)"),value:`${nf(Math.min(...win),2)} – ${nf(Math.max(...win),2)}`,sub:tr("Mínimo – máximo","Low – high"),tag:"BCRD"})}
   </section>
   <section class="grid3">
-    <div class="panel"><h2>${tr("USD/DOP diario","Daily USD/DOP")}</h2><p class="p-sub">${tr("DOP por USD · media móvil de 30 observaciones en línea discontinua","DOP per USD · 30-observation moving average dashed")}</p><div class="chart tall"><canvas id="f1"></canvas></div></div>
+    <div class="panel"><h2>${period?tr("USD/DOP diario","Daily USD/DOP"):tr("USD/DOP mensual desde 1991","Monthly USD/DOP since 1991")}</h2><p class="p-sub">${period?tr("DOP por USD · media móvil de 30 observaciones en línea discontinua","DOP per USD · 30-observation moving average dashed"):tr("DOP por USD · cierre de cada mes","DOP per USD · month-end close")}</p><div class="chart tall"><canvas id="f1"></canvas></div></div>
     <div class="panel"><div class="p-head"><div><h2>${tr("Promedio anual de la tasa de venta","Annual average sell rate")}</h2><p class="p-sub">${tr("DOP por USD · 1991 a la fecha (año en curso parcial)","DOP per USD · 1991 to date (current year partial)")}</p></div>${real()}</div><div class="chart tall"><canvas id="f2"></canvas></div></div>
   </section>
   <section class="panel"><div class="p-head"><div><h2>${tr("Resumen mensual de la tasa de venta","Monthly summary of the sell rate")}</h2><p class="p-sub">${tr("Cierre = último día hábil del mes · variaciones convencionales (↑ = depreciación del peso)","Close = last business day of the month · conventional changes (↑ = peso depreciation)")}</p></div>${csvBtn("cpyFx")}</div><div id="fxTbl"></div></section>
   <p class="note">${tr("Historia desde 1991: archivo diario oficial del BCRD (descarga automática). Un dato de la fuente (25 ene 1991, compra mayor que venta) fue rechazado por las reglas de calidad.","History since 1991: official BCRD daily file (automatic download). One source record (Jan 25, 1991, buy above sell) was rejected by the data-quality rules.")}</p>`);
-  const lbl = idx.map(i=>fmtDate(fx.d[i]));
-  const ma = idx.map(i => i>=29 ? fx.s.slice(i-29,i+1).reduce((a,b)=>a+b,0)/30 : null);
   const ds = [];
-  if (type!=="b") ds.push({label:tr("Venta","Sell"),data:idx.map(i=>fx.s[i]),color:"--s1"});
-  if (type!=="s") ds.push({label:tr("Compra","Buy"),data:idx.map(i=>fx.b[i]),color:"--s2"});
-  if (type!=="b") ds.push({label:tr("Media móvil 30 (venta)","30-day moving average (sell)"),data:ma,color:"--muted",dash:[5,5]});
-  lineChart("f1", lbl, ds, {yFmt:v=>nf(v,2)});
-  const byY = {}; fx.d.forEach((d,i)=>{ (byY[d.slice(0,4)] ||= []).push(fx.s[i]); });
-  const yrs = Object.keys(byY).sort();
-  barChart("f2", yrs, [{label:tr("Promedio anual","Annual average"),data:yrs.map(y=>byY[y].reduce((a,b)=>a+b,0)/byY[y].length),color:"--s1"}], {yFmt:v=>nf(v,0)});
-  const byM = {}; fx.d.forEach((d,i)=>{ byM[d.slice(0,7)] = i; });
-  const keys = Object.keys(byM), ms = keys.filter(m => m >= startD.slice(0,7));
-  const rows = ms.map(m => { const i = byM[m]; const pm = keys[keys.indexOf(m)-1]; const pi = pm?byM[pm]:null;
-    return [fmtMonth(m), fmtDate(fx.d[i]), nf(fx.s[i],4), pi!=null?pct((fx.s[i]/fx.s[pi]-1)*100):"—", nf(fx.s[i]-fx.b[i],4)]; }).reverse();
+  if (period){
+    const ma = idx.map(i => i>=29 ? fx.s.slice(i-29,i+1).reduce((a,b)=>a+b,0)/30 : null);
+    if (type!=="b") ds.push({label:tr("Venta","Sell"),data:idx.map(i=>fx.s[i]),color:"--s1"});
+    if (type!=="s") ds.push({label:tr("Compra","Buy"),data:idx.map(i=>fx.b[i]),color:"--s2"});
+    if (type!=="b") ds.push({label:tr("Media móvil 30 (venta)","30-day moving average (sell)"),data:ma,color:"--muted",dash:[5,5]});
+    lineChart("f1", idx.map(i=>fmtDate(fx.d[i])), ds, {yFmt:v=>nf(v,2)});
+  } else {
+    if (type!=="b") ds.push({label:tr("Venta (cierre)","Sell (close)"),data:FM.s,color:"--s1"});
+    if (type!=="s") ds.push({label:tr("Compra (cierre)","Buy (close)"),data:FM.b,color:"--s2"});
+    lineChart("f1", FM.m.map(fmtMonth), ds, {yFmt:v=>nf(v,2)});
+  }
+  barChart("f2", REAL.fxy.y, [{label:tr("Promedio anual","Annual average"),data:REAL.fxy.a,color:"--s1"}], {yFmt:v=>nf(v,0)});
+  const rows = FM.m.map((m,k) => [m,k]).filter(([m]) => m >= startD.slice(0,7)).map(([m,k]) =>
+    [fmtMonth(m), fmtDate(FM.d[k]), nf(FM.s[k],4), k>0?pct((FM.s[k]/FM.s[k-1]-1)*100):"—", nf(FM.s[k]-FM.b[k],4)]).reverse();
   const cols = [tr("Mes","Month"),tr("Último día hábil","Last business day"),tr("Venta","Sell"),tr("Var. mensual","Monthly change"),tr("Diferencial","Spread")];
   $("#fxTbl").innerHTML = table(cols, rows); bindCopy("cpyFx", cols, rows, tr("tipo de cambio","exchange rate")); bindFilters(D);
 }
@@ -423,6 +423,12 @@ function renderElectricidad(el){
 
 /* ---------- 8. Precios agropecuarios (real · Ministerio de Agricultura) ---------- */
 function renderAgro(el){
+  if (!REAL.agri){
+    el.insertAdjacentHTML("beforeend", `<div class="empty">${tr("Cargando precios agropecuarios…","Loading agricultural prices…")}</div>`);
+    loadAgri().then(a => { REAL.agri = a; buildAG(); if (state.page === "agro") draw(); })
+      .catch(() => { el.innerHTML = `<div class="empty">${tr("No se pudieron cargar los datos. Recarga la página.","Data could not be loaded. Please reload the page.")}</div>`; });
+    return;
+  }
   const A = AG.A, M = A.m, last = M.length-1;
   const D = {ag_ch:"0", ag_rub:"all", ag_prod:"", ag_m:M[last]};
   const ch = +F("ag_ch",D.ag_ch), rub = F("ag_rub",D.ag_rub), m = F("ag_m",D.ag_m), mi = M.indexOf(m);
@@ -497,15 +503,15 @@ function renderAgro(el){
 /* ---------- 9. Fuentes ---------- */
 function renderFuentes(el){
   const ok = `<span class="status real">${tr("Automático","Automatic")}</span>`;
-  const hl = cpiSeries("headline"), fx = REAL.fx, fu = REAL.fuel, A = REAL.agri, E = REAL.elec;
+  const hl = cpiSeries("headline"), fx = REAL.fx, FM = REAL.fxm, fu = REAL.fuel, AS = REAL.agriSum, E = REAL.elec;
   const rows = [
-    [tr("Tipo de cambio USD/DOP (FX-001…009)","USD/DOP exchange rate (FX-001…009)"),"BCRD",tr("Diaria (días hábiles)","Daily (business days)"),`${fmtDate(fx.d[0])} – ${fmtDate(fx.d[fx.d.length-1])}`,ok],
+    [tr("Tipo de cambio USD/DOP (FX-001…009)","USD/DOP exchange rate (FX-001…009)"),"BCRD",tr("Diaria (días hábiles)","Daily (business days)"),`${fmtDate(FM.d[0].slice(0,8)+"02")} – ${fmtDate(fx.d[fx.d.length-1])}`,ok],
     [tr("IPC: general, mensual, interanual, acumulada, subyacente, por grupo y región (INF-001…006)","CPI: headline, monthly, YoY, YTD, core, by group and region (INF-001…006)"),"BCRD",tr("Mensual","Monthly"),`1984 – ${fmtMonth(hl.m[hl.m.length-1])} ${tr("(aquí desde 2018)","(shown since 2018)")}`,ok],
     [tr("Canasta familiar por quintil y región (COL-001…003)","Family basket by quintile and region (COL-001…003)"),"BCRD",tr("Mensual","Monthly"),`2018 – ${fmtMonth(colSeg("national").m.slice(-1)[0])}`,ok],
     [tr("Precios de combustibles (FUEL-001…012)","Fuel prices (FUEL-001…012)"),"MICM · datos.gob.do",tr("Semanal","Weekly"),`2010 – ${fmtDate(fu.e[fu.e.length-1])} ${tr("(aquí desde 2018)","(shown since 2018)")}`,ok],
     [tr("Precios de productos (CON-001…005)","Basic-goods prices (CON-001…005)"),"Pro Consumidor · datos.gob.do",tr("Mensual (reporte trimestral)","Monthly (quarterly report)"),tr("jul – sep 2026","Jul – Sep 2026"),ok],
     [tr("Electricidad: precio, pérdidas, CRI y tarifas (ENE-001…009)","Electricity: price, losses, CRI and tariffs (ENE-001…009)"),"MEM · SIE",tr("Mensual · trimestral","Monthly · quarterly"),`2020 – ${fmtMonth(E.m[E.m.length-1])}`,ok],
-    [tr("Precios agropecuarios (AGR-001…005, AGR-007)","Agricultural prices (AGR-001…005, AGR-007)"),tr("Ministerio de Agricultura · datos.gob.do","Ministry of Agriculture · datos.gob.do"),tr("Semanal","Weekly"),`${tr("ago","Aug")} 2017 – ${fmtMonth(A.m[A.m.length-1])}`,ok],
+    [tr("Precios agropecuarios (AGR-001…005, AGR-007)","Agricultural prices (AGR-001…005, AGR-007)"),tr("Ministerio de Agricultura · datos.gob.do","Ministry of Agriculture · datos.gob.do"),tr("Semanal","Weekly"),`${tr("ago","Aug")} 2017 – ${fmtMonth(AS.m)}`,ok],
   ];
   el.insertAdjacentHTML("beforeend", `<section class="panel"><h2>${tr("Indicadores y estado de los datos","Indicators and data status")}</h2><p class="p-sub">${tr("Todos los indicadores se calculan con archivos oficiales que se descargan automáticamente y se procesan en Databricks.","Every indicator is calculated from official files that are downloaded automatically and processed in Databricks.")}</p>
     ${table([tr("Indicador","Indicator"),tr("Fuente","Source"),tr("Frecuencia","Frequency"),tr("Cobertura","Coverage"),tr("Carga","Load")], rows)}
@@ -560,4 +566,9 @@ $("#menuBtn").addEventListener("click", () => $("#app").classList.toggle("menu-o
 document.addEventListener("keydown", e => { if (e.key==="Escape") $("#app").classList.remove("menu-open"); });
 let start = location.hash.slice(1); if (!PAGES.some(p=>p.id===start)) { try{ start = localStorage.getItem("rdip.page") || "panorama"; }catch(e){ start = "panorama"; } }
 state.page = PAGES.some(p=>p.id===start) ? start : "panorama";
-applyLang(); applyTheme(false); navigate(state.page);
+applyLang(); applyTheme(false);
+$("#bootMsg").textContent = tr("Cargando datos…","Loading data…");
+if (state.page === "agro") loadAgri();
+const chartReady = new Promise(res => window.Chart ? res() : window.addEventListener("DOMContentLoaded", res));
+Promise.all([CORE_P, chartReady]).then(([core]) => { REAL = core; navigate(state.page); })
+  .catch(() => { $("#content").innerHTML = `<div class="empty">${tr("No se pudieron cargar los datos. Recarga la página.","Data could not be loaded. Please reload the page.")}</div>`; });
