@@ -84,7 +84,7 @@ The following infrastructure components have been successfully verified:
 
 | Pipeline | Target table | Result |
 |---|---|---|
-| [01_BCRD_Exchange_Rates_Bronze](../src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) | `rd_economic_intelligence.bronze.bcrd_exchange_rates_daily` | 1,253 rows loaded (2021-09-20 to 2026-09-18); row count matches source; all observational quality checks passed (no invalid or duplicate dates, no null or non-positive rates, no buy rate above sell rate) |
+| [01_BCRD_Exchange_Rates_Bronze](../src/bronze/01_BCRD_Exchange_Rates_Bronze.ipynb) | `rd_economic_intelligence.bronze.bcrd_exchange_rates_daily` | Two layouts captured as text: `daily_since_1991` (`TASA_DOLAR_REFERENCIA_MC.xlsx`, sheet `Diaria`, 8,990 rows, automatic download) and `historico_5y` (manual export, 1,253 rows). Observational checks: one source row with buy > sell (1991-01-25) |
 
 Design rules applied:
 
@@ -104,7 +104,7 @@ Design rules applied:
 
 | Pipeline | Target table | Result |
 |---|---|---|
-| [01_BCRD_Exchange_Rates_Silver](../src/silver/01_BCRD_Exchange_Rates_Silver.ipynb) | `rd_economic_intelligence.silver.bcrd_exchange_rates_daily` | 1,253 rows (2021-09-20 to 2026-09-18), one per business day; 0 rejected; reconciliation passed (Silver + rejected = Bronze) |
+| [01_BCRD_Exchange_Rates_Silver](../src/silver/01_BCRD_Exchange_Rates_Silver.ipynb) | `rd_economic_intelligence.silver.bcrd_exchange_rates_daily` | 8,989 rows (1991-01-02 to 2026-10-23), one per business day; 1 rejected (buy > sell on 1991-01-25); 1,253 superseded; reconciliation passed (10,243 = 8,989 + 1 + 1,253). `rates_match_across_snapshots`: 1 of 1,253 overlapping dates differs (2026-03-06 buy 60.3088 vs 60.308) |
 
 Design rules applied:
 
@@ -123,8 +123,8 @@ Design rules applied:
 
 | Pipeline | Target table | Grain | KPIs | Rows |
 |---|---|---|---|---|
-| [01_BCRD_Exchange_Rates_Gold](../src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) | `gold.exchange_rate_metrics` | Date × currency pair × rate type | FX-001, FX-002, FX-003, FX-006, FX-007, FX-008, FX-009 | 2,506 |
-| [01_BCRD_Exchange_Rates_Gold](../src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) | `gold.exchange_rate_monthly_metrics` | Month × currency pair × rate type | FX-004, FX-005, month-end FX-006 | 122 |
+| [01_BCRD_Exchange_Rates_Gold](../src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) | `gold.exchange_rate_metrics` | Date × currency pair × rate type | FX-001, FX-002, FX-003, FX-006, FX-007, FX-008, FX-009 | 17,978 |
+| [01_BCRD_Exchange_Rates_Gold](../src/gold/01_BCRD_Exchange_Rates_Gold.ipynb) | `gold.exchange_rate_monthly_metrics` | Month × currency pair × rate type | FX-004, FX-005, month-end FX-006 | 860 |
 
 Daily and monthly KPIs live in separate tables so BI tools never aggregate monthly values over daily rows.
 
@@ -133,9 +133,11 @@ Validation results (all passed):
 - Row count equals Silver × 2 rate types; one row per date, currency pair and rate type.
 - Moving-average and 52-week values are NULL exactly when their window is incomplete (KPI decision D4).
 - 52-week low never exceeds the high, and every rate falls inside its 52-week range.
-- **Reconciliation with BCRD official values:** our YTD change, restated with the BCRD reciprocal method, matches the published BCRD accumulated appreciation/depreciation on **2,358 of 2,358** comparable days (tolerance 0.15 points for BCRD's one-decimal rounding). This confirms the calculation logic and the sign convention of decision D1.
+- **Reconciliation with BCRD official values:** our YTD change, restated with the BCRD reciprocal method, matches the published BCRD accumulated appreciation/depreciation on **2,506 of 2,506** comparable days (tolerance 0.15 points for BCRD's one-decimal rounding). This confirms the calculation logic and the sign convention of decision D1.
 
-**Data finding:** the source extract starts on 2021-09-20 and ends on 2026-09-18, so the first and last months do not cover a full month. They are flagged with `is_partial_month` so dashboards can label them as month-to-date. Full 52-week windows start on 2022-09-19 and full year-over-year values in September 2022.
+**Source change (automatic download):** the history now comes from the BCRD daily file since 1991; the five-year export (2021-09-20 to 2026-09-18) remains in Bronze and still supplies the BCRD appreciation/depreciation reference values for the reconciliation.
+
+**Data finding (five-year export):** the extract starts on 2021-09-20 and ends on 2026-09-18, so the first and last months do not cover a full month. They are flagged with `is_partial_month` so dashboards can label them as month-to-date. Full 52-week windows start on 2022-09-19 and full year-over-year values in September 2022.
 
 ### CPI and Family Basket Pipelines
 
@@ -143,10 +145,10 @@ Validation results (all passed):
 
 | Layer | Notebook | Output | Result |
 |---|---|---|---|
-| Bronze | [02_BCRD_CPI_Bronze](../src/bronze/02_BCRD_CPI_Bronze.ipynb) | `bronze.bcrd_cpi_raw_rows` | 1,843 rows from 6 workbooks, captured as published; Auto Loader register `bronze.bcrd_cpi_files`, one snapshot per workbook, Silver uses the newest per dataset (verified with a second snapshot) |
-| Silver | [02_BCRD_CPI_Silver](../src/silver/02_BCRD_CPI_Silver.ipynb) | 5 tables (below) | 6,476 records, 0 rejected, all rules passed |
-| Gold | [02_BCRD_CPI_Gold](../src/gold/02_BCRD_CPI_Gold.ipynb) | `gold.inflation_metrics` | 5,568 rows, INF-001 to INF-006 |
-| Gold | [03_BCRD_Cost_of_Living_Gold](../src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) | `gold.cost_of_living_metrics` | 908 rows, COL-001 to COL-003 |
+| Bronze | [02_BCRD_CPI_Bronze](../src/bronze/02_BCRD_CPI_Bronze.ipynb) | `bronze.bcrd_cpi_raw_rows` | 6 workbooks captured as published (automatic download from stable BCRD URLs: 2 `.xlsx`, 4 legacy `.xls` read with `xlrd`); Auto Loader register `bronze.bcrd_cpi_files`, one snapshot per workbook, Silver uses the newest per dataset (verified with a second snapshot) |
+| Silver | [02_BCRD_CPI_Silver](../src/silver/02_BCRD_CPI_Silver.ipynb) | 5 tables (below) | 6,504 records to September 2026, 0 rejected, all rules passed |
+| Gold | [02_BCRD_CPI_Gold](../src/gold/02_BCRD_CPI_Gold.ipynb) | `gold.inflation_metrics` | 5,586 rows, INF-001 to INF-006; MoM, YoY and YTD reconcile with BCRD published values |
+| Gold | [03_BCRD_Cost_of_Living_Gold](../src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) | `gold.cost_of_living_metrics` | 918 rows, COL-001 to COL-003 |
 
 Silver tables: `bcrd_cpi_national_monthly` (1984+), `bcrd_cpi_core_monthly` (2000+), `bcrd_cpi_groups_monthly` (12 groups, 1999+), `bcrd_cpi_regions_monthly` (4 regions, 2011+), `bcrd_family_basket_monthly` (quintiles and national 2018+, regions Oct-2020+).
 

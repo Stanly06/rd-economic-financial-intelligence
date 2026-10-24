@@ -1,6 +1,6 @@
 {
   "name": "rd_economic_medallion_pipeline",
-  "description": "RD Economic & Financial Intelligence Platform: five independent Medallion chains run in parallel. BCRD FX (FX-001..009), BCRD CPI (INF-001..006, then COL-001..003), MICM fuel prices (FUEL-001..012), Pro Consumidor basic-goods prices (CON-001..005) and MEM electricity (ENE-001..009). MEM, MICM and Pro Consumidor files are downloaded automatically before Bronze; all Bronze tasks ingest incrementally with Auto Loader. Notebooks run from the Git folder (branch main).",
+  "description": "RD Economic & Financial Intelligence Platform: five independent Medallion chains run in parallel. BCRD FX (FX-001..009), BCRD CPI (INF-001..006, then COL-001..003), MICM fuel prices (FUEL-001..012), Pro Consumidor basic-goods prices (CON-001..005) and MEM electricity (ENE-001..009). Every source file (BCRD, MICM, Pro Consumidor, MEM) is downloaded automatically before Bronze; all Bronze tasks ingest incrementally with Auto Loader. Notebooks run from the Git folder (branch main).",
   "tags": {
     "project": "rd-economic-intelligence",
     "source": "bcrd-micm-proconsumidor-mem",
@@ -22,6 +22,28 @@
     "pause_status": "PAUSED"
   },
   "tasks": [
+    {
+      "task_key": "download_bcrd_cpi",
+      "description": "Download the six BCRD CPI and family-basket workbooks (.xlsx and legacy .xls) into the append-only bcrd_raw archive (skips content already archived)",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Download",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 2,
+      "min_retry_interval_millis": 120000,
+      "timeout_seconds": 900
+    },
+    {
+      "task_key": "download_bcrd_exchange_rates",
+      "description": "Download the BCRD daily USD/DOP reference-rate workbook (since 1991) into the append-only bcrd_raw archive (skips content already archived)",
+      "notebook_task": {
+        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Download",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 2,
+      "min_retry_interval_millis": 120000,
+      "timeout_seconds": 900
+    },
     {
       "task_key": "download_proconsumidor_prices",
       "description": "Download the current Pro Consumidor basic-goods price report from datos.gob.do into the append-only proconsumidor_raw archive (skips content already archived)",
@@ -53,7 +75,12 @@
       },
       "max_retries": 1,
       "min_retry_interval_millis": 60000,
-      "timeout_seconds": 1200
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "download_bcrd_exchange_rates"
+        }
+      ]
     },
     {
       "task_key": "silver_bcrd_exchange_rates",
@@ -96,7 +123,12 @@
       },
       "max_retries": 1,
       "min_retry_interval_millis": 60000,
-      "timeout_seconds": 1200
+      "timeout_seconds": 1200,
+      "depends_on": [
+        {
+          "task_key": "download_bcrd_cpi"
+        }
+      ]
     },
     {
       "task_key": "silver_bcrd_cpi",
