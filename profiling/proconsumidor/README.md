@@ -25,7 +25,7 @@ Assess actual source structure, temporal and categorical coverage, data quality,
 | Months appearing in data | July, August, September |
 | Year quality | **570 records marked 2026; 30 records marked other years (2027–2041)** |
 
-Raw CSV and XLSX files should be preserved unchanged in controlled storage. Do not upload source data to the public repository pending source licensing and data-publication review.
+Raw CSV and XLSX files are preserved unchanged in the append-only archive `bronze.proconsumidor_raw/consumer_prices/<yyyy>/<mm>/` (one folder per arrival month, because every report uses the same file name). Do not upload source data to the public repository pending source licensing and data-publication review.
 
 ## 3. Observed distribution
 

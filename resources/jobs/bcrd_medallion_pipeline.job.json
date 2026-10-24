@@ -169,7 +169,7 @@
     },
     {
       "task_key": "bronze_proconsumidor_prices",
-      "description": "Capture the Pro Consumidor basic-goods price XLSX into bronze.proconsumidor_prices_raw",
+      "description": "Auto Loader: register new Pro Consumidor price workbooks and capture each one as a snapshot in bronze.proconsumidor_prices_raw",
       "notebook_task": {
         "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/05_ProConsumidor_Prices_Bronze",
         "source": "WORKSPACE"

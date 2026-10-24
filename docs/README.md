@@ -96,7 +96,7 @@ Design rules applied:
 
 **Technical finding:** Databricks Free Edition serverless compute does not include `openpyxl`, which pandas requires to read `.xlsx` files. Every Excel-based ingestion notebook installs a pinned version (`openpyxl==3.1.5`) in its first code cell.
 
-**Important:** This is a development implementation, not a production pipeline. Incremental loading is still pending (see the MICM and Pro Consumidor section below for the other Bronze pipelines).
+**Important:** This is a development implementation, not a production pipeline. Incremental loading with Auto Loader is implemented for Pro Consumidor and MEM electricity (shared helper `src/shared/ingestion.py`); BCRD and MICM are next.
 
 ### Silver Layer Status
 
@@ -170,8 +170,8 @@ Reconciliation with BCRD published values (all passed): monthly variation 5,550/
 | Bronze | [04_MICM_Fuel_Prices_Bronze](../src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) | `bronze.micm_fuel_prices_raw` | 872 XLSX + 872 CSV rows, all source columns kept as JSON |
 | Silver | [04_MICM_Fuel_Prices_Silver](../src/silver/04_MICM_Fuel_Prices_Silver.ipynb) | `silver.micm_fuel_prices_weekly` | 19,096 rows, 22 fuels, 2010-01-02 to 2026-08-28; 4 superseded weeks rejected |
 | Gold | [04_MICM_Fuel_Prices_Gold](../src/gold/04_MICM_Fuel_Prices_Gold.ipynb) | `gold.fuel_price_metrics` | 15,296 rows, FUEL-001 to FUEL-012 |
-| Bronze | [05_ProConsumidor_Prices_Bronze](../src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) | `bronze.proconsumidor_prices_raw` | 600 rows plus the report-period title |
-| Silver | [05_ProConsumidor_Prices_Silver](../src/silver/05_ProConsumidor_Prices_Silver.ipynb) | `silver.proconsumidor_prices_monthly` | 570 rows, 197 products, 5 retail segments; 30 rejected (year outside report period); 21 label variants canonicalized |
+| Bronze | [05_ProConsumidor_Prices_Bronze](../src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) | `bronze.proconsumidor_files`, `bronze.proconsumidor_prices_raw` | Auto Loader, one snapshot per archived workbook: 600 rows plus the report-period title. Verified: a rerun captures nothing; a second report with the same file name is captured alone |
+| Silver | [05_ProConsumidor_Prices_Silver](../src/silver/05_ProConsumidor_Prices_Silver.ipynb) | `silver.proconsumidor_prices_monthly` | 570 rows, 197 products, 5 retail segments; 30 rejected (year outside report period); 21 label variants canonicalized; with two overlapping reports the newest wins (570 superseded, reconciliation 1,200 = 570 + 60 + 570) |
 | Gold | [05_ProConsumidor_Prices_Gold](../src/gold/05_ProConsumidor_Prices_Gold.ipynb) | `gold.consumer_price_metrics` | 461 rows, CON-001 to CON-005 |
 
 Design decisions:
@@ -180,6 +180,7 @@ Design decisions:
 - **MICM price weeks** are rebuilt from `DIA DESDE`, `DIA HASTA` and a month label that is sometimes the start month, sometimes the end month, and has typos ([`src/shared/micm_parsers.py`](../src/shared/micm_parsers.py)). Source gaps (3) and overlaps (3) are reported, not altered.
 - **MICM zero prices** mean "not published" (NULL, `is_published = false`) and are excluded from KPIs.
 - **Pro Consumidor anomalous years** (2027 to 2041 in a July–September 2026 report) are rejected, not corrected.
+- **Pro Consumidor incremental ingestion:** every quarterly report is published with the same file name, so the raw archive keeps one folder per arrival month and Auto Loader tracks files by path. Silver rebuilds from all snapshots; overlapping months are taken from the newest report (`superseded_by_newer_file`, observational) and the reconciliation rule becomes Bronze = Silver + rejected + superseded. The CSV is archived but not ingested (`*.xlsx` filter).
 - **Pro Consumidor month-over-month** is like-for-like by retail segment: the segments priced change from month to month, so comparing cross-segment averages would mix price changes with sample changes.
 
 **Data finding:** fuel prices were frozen from August to December 2025 (for example Gasolina Premium RD$290 every week), so in the latest week the year-over-year and year-to-date changes are identical.

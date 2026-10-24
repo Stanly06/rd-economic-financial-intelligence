@@ -64,8 +64,8 @@ The platform only includes Dominican data. International data is allowed only as
 - [`04_MICM_Fuel_Prices_Gold`](src/gold/04_MICM_Fuel_Prices_Gold.ipynb) calculates FUEL-001 to FUEL-012 into `gold.fuel_price_metrics` (15,296 rows).
 
 **Pro Consumidor basic-goods prices** (development)
-- [`05_ProConsumidor_Prices_Bronze`](src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) captures the XLSX and its report-period title (`bronze.proconsumidor_prices_raw`, 600 rows).
-- [`05_ProConsumidor_Prices_Silver`](src/silver/05_ProConsumidor_Prices_Silver.ipynb) builds `silver.proconsumidor_prices_monthly` (570 rows, 197 products, 5 retail segments, July–September 2026). 30 rows with years outside the report period are rejected, not corrected; product and presentation labels that differ only in capitals or spacing get one canonical label.
+- [`05_ProConsumidor_Prices_Bronze`](src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) ingests incrementally with **Auto Loader** through the shared helper [`src/shared/ingestion.py`](src/shared/ingestion.py): each quarterly workbook archived in `proconsumidor_raw/consumer_prices/<yyyy>/<mm>/` is registered once (`bronze.proconsumidor_files`) and captured as one snapshot with its report-period title (`bronze.proconsumidor_prices_raw`, 600 rows per report).
+- [`05_ProConsumidor_Prices_Silver`](src/silver/05_ProConsumidor_Prices_Silver.ipynb) builds `silver.proconsumidor_prices_monthly` (570 rows, 197 products, 5 retail segments, July–September 2026) from all archived reports; each file is validated against its own report period and, where reports overlap, the newest one wins. 30 rows with years outside the report period are rejected, not corrected; product and presentation labels that differ only in capitals or spacing get one canonical label.
 - [`05_ProConsumidor_Prices_Gold`](src/gold/05_ProConsumidor_Prices_Gold.ipynb) calculates CON-001 to CON-005 into `gold.consumer_price_metrics`; month-over-month change is like-for-like by retail segment.
 
 **MEM electricity** (development)
