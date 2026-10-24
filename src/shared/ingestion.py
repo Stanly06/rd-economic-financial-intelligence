@@ -33,7 +33,7 @@ def register_new_files(spark, source_dir, glob, checkpoint, files_table, comment
     progress = query.recentProgress or []
     if comment:
         spark.sql(f"COMMENT ON TABLE {files_table} IS '{comment}'")
-    return sum(p["numInputRows"] for p in progress)
+    return sum((p.get("numInputRows") or 0) for p in progress)  # empty micro-batches report None
 
 
 def pending_files(spark, files_table, target_table):
