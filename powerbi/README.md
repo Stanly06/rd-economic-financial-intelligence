@@ -2,7 +2,7 @@
 
 Power BI is the external consumer of the Gold layer. This guide documents how the report connects to Databricks, the semantic model, and the first report pages.
 
-**Status:** report built in Power BI Desktop (6 pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices) on the model and measures below. The `.pbix` file is kept outside the repository.
+**Status:** report built in Power BI Desktop (7 pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices, Electricity) on the model and measures below. The `.pbix` file is kept outside the repository.
 
 ---
 
@@ -36,6 +36,8 @@ Steps in Power BI Desktop:
 | `Cost of Living` | `gold.cost_of_living_metrics` | Month × segment | COL-001 to COL-003 |
 | `Fuel Prices` | `gold.fuel_price_metrics` | Price week × fuel | FUEL-001 to FUEL-012 |
 | `Consumer Prices` | `gold.consumer_price_metrics` | Month × product × presentation | CON-001 to CON-005 |
+| `Electricity` | `gold.electricity_metrics` | Month × distributor | ENE-005 to ENE-009 |
+| `Electricity Bill` | `gold.electricity_bts1_bill` | Month × distributor × monthly kWh | ENE-003, ENE-004 |
 | `Calendar` | DAX table | Day | — |
 
 Relationships (one-to-many, single direction from `Calendar`):
@@ -117,6 +119,17 @@ Business question BQ-003: *How is the Dominican peso performing against the U.S.
 | Table | `product`, `presentation`, `CON Avg Price`, `CON Median Price`, `CON Min Price`, `CON Max Price`, `CON Cheapest Segment`, `CON Most Expensive Segment`, `CON Spread %`, `CON MoM %` |
 | Bar chart | Axis `product`; value `CON MoM % Top 15` |
 
+### Page 7 — Electricity
+
+| Visual | Fields |
+|---|---|
+| Multi-value card | `ELEC Selling Price`, `ELEC Selling Price YoY %`, `ELEC Purchase Price cUSD`, `ELEC Losses Rolling %`, `ELEC CRI Rolling %`, `BTS1 Bill 200 kWh Applied`, `BTS1 Bill 200 kWh Reference` |
+| Line chart | Axis `Electricity[reference_month]`; value `ELEC Selling Price Series`; legend `Electricity[distributor]` |
+| Line chart | Axis `Electricity Bill[reference_month]`; values `Bill 200 kWh Applied (Edesur)`, `Bill 200 kWh Reference (Edesur)` |
+| Line chart | Axis `Electricity[reference_month]`; value `ELEC Losses Rolling Series`; legend `Electricity[distributor]` |
+
+Queries for the two electricity tables use the same `DatabricksMultiCloud.Catalogs` source as the other tables. The electricity page canvas is 1920 × 1080 like the others.
+
 ## 4. Data notes for report users
 
 - FX source extract covers 2021-09-20 to 2026-09-18. September 2021 and September 2026 are partial months.
@@ -125,3 +138,4 @@ Business question BQ-003: *How is the Dominican peso performing against the U.S.
 - The BCRD family basket is the ENGIH-2018 basket indexed by CPI. Its national and regional year-over-year change therefore equals headline and regional CPI inflation; the basket adds the **DOP level** and the **income-quintile** view. Quintile values before October 2020 are a BCRD retropolation.
 - Fuel prices are MICM official weekly prices in RD$ per gallon, from the XLSX file (the CSV rounds to whole pesos). Prices were frozen from August to December 2025, so in the latest week year-over-year and year-to-date changes are equal. GLP shows a one-week value of RD$163.55 (week of 2024-08-31) between weeks at about RD$132; it is kept as published and flagged as a probable source error.
 - Consumer prices cover July–September 2026 only. Month-over-month change compares the same product, presentation and retail segment in both months; year-over-year and regional comparisons are not available from this source.
+- Electricity: MEM distributor indicators and SIE regulated tariffs from the MEM annex, January 2020 to July 2026. The reference vs applied tariff gap is a proxy of the subsidy, not an official figure; the BTS-1 bill excludes taxes and other charges.

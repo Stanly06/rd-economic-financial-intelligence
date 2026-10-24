@@ -406,13 +406,12 @@ Related KPIs:
 
 Related KPIs:
 
-- Electricity Tariff
-- MoM Tariff Change %
-- YoY Tariff Change %
-- YTD Tariff Change %
-- Average Cost per kWh
+- Electricity Tariff (applied) and reference vs applied gap
+- Typical residential bill and its YoY %
+- Average cost per kWh (selling price) and its MoM/YoY %
+- Purchase price, losses, collection and CRI
 
-> **Status:** Pending Source Validation.
+> **Status:** Validated (2026-10-24) — MEM annex, January 2020 to July 2026.
 
 ---
 
@@ -1088,34 +1087,31 @@ gold.agricultural_price_metrics
 
 # 15. Energy & Electricity KPIs
 
-| KPI ID | KPI Name | Unit | Priority |
-|---|---|---|---|
-| **ENE-001** | Electricity Tariff | DOP/kWh or source unit | Phase 2 |
-| **ENE-002** | MoM Tariff Change % | % | Phase 2 |
-| **ENE-003** | YoY Tariff Change % | % | Phase 2 |
-| **ENE-004** | YTD Tariff Change % | % | Phase 2 |
-| **ENE-005** | Average Cost per kWh | DOP/kWh | Phase 2 |
+**Validation status:** Validated (2026-10-24) against the Ministry of Energy and Mines (MEM) *Informe de Desempeño de las Empresas Eléctricas Estatales*, annex workbook of July 2026 (sheets `EDE's` and `Nuevo Regimen tarifario`). The annex carries the full monthly history of the three state distributors (Edenorte, Edesur, Edeeste) since 2009 and the regulated tariffs set by SIE resolutions since 2020. Gold covers January 2020 to July 2026 (tariffs to September 2026). The average selling price reconciles with the MEM PDF report of May 2026 (Edenorte RD$10.13/kWh, Edesur RD$10.51/kWh).
 
-Potential dimensions:
+| KPI ID | KPI Name | Unit | Granularity | Gold dataset | Status |
+|---|---|---|---|---|---|
+| **ENE-001** | Electricity Tariff (applied) | RD$ per kWh, RD$/month, RD$/kW-month | Month (quarterly resolutions) × tariff × concept × distributor | `gold.electricity_tariff_monthly` | Validated |
+| **ENE-002** | Reference vs Applied Tariff Gap % | % | Same as ENE-001 | `gold.electricity_tariff_monthly` | Validated |
+| **ENE-003** | Typical Residential Bill (BTS-1, 200 and 300 kWh) | RD$/month | Month × distributor × consumption | `gold.electricity_bts1_bill` | Validated |
+| **ENE-004** | Typical Bill YoY % | % | Same as ENE-003 | `gold.electricity_bts1_bill` | Validated |
+| **ENE-005** | Average Cost per kWh (distributor average selling price) | RD$/kWh | Month × distributor | `gold.electricity_metrics` | Validated |
+| **ENE-006** | Average Selling Price MoM % and YoY % | % | Month × distributor | `gold.electricity_metrics` | Validated |
+| **ENE-007** | Average Purchase Price and Sell–Buy Margin | US¢/kWh | Month × distributor | `gold.electricity_metrics` | Validated |
+| **ENE-008** | Energy Losses (month and 12-month rolling) | % of energy bought | Month × distributor | `gold.electricity_metrics` | Validated |
+| **ENE-009** | Collection and CRI (12-month rolling) | % | Month × distributor | `gold.electricity_metrics` | Validated |
 
-```text
-Date
-Tariff Category
-Distributor
-Region
-```
+Definitions and source decisions:
 
-Candidate sources may include official Dominican electricity-sector institutions.
+- The original drafts ENE-002 (tariff MoM %) and ENE-004 (tariff YTD %) were refined: regulated tariffs change by resolution (quarterly), so monthly tariff change is mostly zero. The year-over-year change of the typical bill (ENE-004) and of the average selling price (ENE-006) are used instead.
+- **Applied** tariff = what the customer pays. **Reference** tariff = cost-based tariff ("tarifa indexada" before October 2021). ENE-002 = (reference / applied − 1) × 100 is a proxy of the tariff subsidy, not an official subsidy figure.
+- Before October 2021 the applied tariff is published once for the three distributors; it is assigned to each distributor in Gold.
+- Two published tariff periods overlap (`abr - may 26` and `abr - jun 26`); for April–May 2026 the later column in the file is used.
+- ENE-003 = BTS-1 fixed charge for 101+ kWh + 200 kWh × first block (+ 100 kWh × second block for 300 kWh). Taxes and other charges are not included.
+- Percent indicators are published as fractions and stored as 0–100.
+- SIE resolutions (e.g. SIE-079-2026-TF) are the legal source of the tariffs but are published as scanned PDFs; the MEM annex is used because it is machine-readable.
 
-However:
-
-> **This domain remains Pending Source Validation.**
-
-Candidate dataset:
-
-```text
-gold.energy_price_metrics
-```
+Dimensions: Month, Distributor (Edenorte, Edesur, Edeeste, Total EDE), Tariff (BTS1, BTS2, BTD, BTH, MTD1, MTD2, MTH), Concept, Monthly consumption.
 
 ---
 

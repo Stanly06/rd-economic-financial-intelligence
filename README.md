@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. BCRD, MICM and Pro Consumidor sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), orchestrated by one Lakeflow Job. Agriculture and electricity are next. For electricity, official sources are identified (MEM monthly distributor performance reports and SIE quarterly tariff resolutions) but none is published as a downloadable dataset.
+> **Status: in progress. BCRD, MICM, Pro Consumidor and MEM (electricity) sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), and electricity (ENE) comes from the MEM monthly distributor report annex, all orchestrated by one Lakeflow Job. Agriculture is next.
 
 ---
 
@@ -21,6 +21,7 @@ The platform only includes Dominican data. International data is allowed only as
 | Banco Central (BCRD) | USD/DOP exchange rate | Core | Validated; pipelines implemented (Bronze, Silver, Gold) |
 | Banco Central (BCRD) | CPI, core CPI, CPI by group and region, family basket | Core | Validated; pipelines implemented (Bronze, Silver, Gold) |
 | Banco Central (BCRD) | Monetary policy rate | Core | Pending |
+| MEM / SIE | Electricity: distributor prices, losses, collection and regulated tariffs | Phase 2 | Validated (MEM annex); pipelines implemented (Bronze, Silver, Gold) |
 | MICM | Fuel prices | Core | Validated (XLSX authoritative); pipelines implemented (Bronze, Silver, Gold) |
 | Pro Consumidor | Consumer / basic basket prices | Core | Validated for Jul–Sep 2026; pipelines implemented (Bronze, Silver, Gold). YoY, YTD, volatility and regional KPIs need more history |
 | Ministry of Agriculture | Agricultural prices (wholesale and retail) | Core | Preliminary profiling and CSV vs. XLSX reconciliation completed; quality validation open |
@@ -67,11 +68,17 @@ The platform only includes Dominican data. International data is allowed only as
 - [`05_ProConsumidor_Prices_Silver`](src/silver/05_ProConsumidor_Prices_Silver.ipynb) builds `silver.proconsumidor_prices_monthly` (570 rows, 197 products, 5 retail segments, July–September 2026). 30 rows with years outside the report period are rejected, not corrected; product and presentation labels that differ only in capitals or spacing get one canonical label.
 - [`05_ProConsumidor_Prices_Gold`](src/gold/05_ProConsumidor_Prices_Gold.ipynb) calculates CON-001 to CON-005 into `gold.consumer_price_metrics`; month-over-month change is like-for-like by retail segment.
 
+**MEM electricity** (development)
+- Source: the MEM *Informe de Desempeño de las Empresas Eléctricas Estatales* annex workbook (latest month carries the full history), landed in Volume `mem_raw`.
+- [`06_MEM_Electricity_Bronze`](src/bronze/06_MEM_Electricity_Bronze.ipynb) captures the `EDE's` and `Nuevo Regimen tarifario` sheets row by row (`bronze.mem_electricity_raw_rows`).
+- [`06_MEM_Electricity_Silver`](src/silver/06_MEM_Electricity_Silver.ipynb) parses them with [`src/shared/mem_parsers.py`](src/shared/mem_parsers.py) into `silver.mem_ede_monthly` (38 indicators × Edenorte, Edesur, Edeeste and total, 2009 to July 2026; 35,446 values) and `silver.mem_tariffs_quarterly` (7 tariffs, reference and applied, 29 periods since 2020; 4,430 values).
+- [`06_MEM_Electricity_Gold`](src/gold/06_MEM_Electricity_Gold.ipynb) calculates ENE-001 to ENE-009 from January 2020 into `gold.electricity_metrics`, `gold.electricity_tariff_monthly` and `gold.electricity_bts1_bill`. The average selling price reconciles with the MEM PDF report (May 2026).
+
 **Orchestration**
-- Lakeflow Job `rd_economic_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): four independent chains (BCRD FX, BCRD CPI, MICM fuel, Pro Consumidor) run in parallel, Bronze → Silver → Gold within each chain (13 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
+- Lakeflow Job `rd_economic_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): five independent chains (BCRD FX, BCRD CPI, MICM fuel, Pro Consumidor, MEM electricity) run in parallel, Bronze → Silver → Gold within each chain (16 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
 
 **Power BI**
-- [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for six pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices and Consumer Prices.
+- [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for seven pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices and Electricity.
 
 ## Target architecture
 
@@ -94,8 +101,8 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM and Pro Consumidor complete + Job; Agriculture pending; electricity sources identified, pipeline pending) |
-| Databricks SQL, dashboard and Power BI | In progress (Power BI report: 6 pages on FX, inflation, cost of living, fuel and consumer prices) |
+| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM, Pro Consumidor and MEM electricity complete + Job; Agriculture pending) |
+| Databricks SQL, dashboard and Power BI | In progress (Power BI report: 7 pages on FX, inflation, cost of living, fuel, consumer prices and electricity) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.
 

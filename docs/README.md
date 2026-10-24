@@ -23,11 +23,11 @@ The documentation follows the complete project lifecycle, from business discover
 | 11 | Bronze Layer | In Progress — BCRD, MICM and Pro Consumidor implemented in development |
 | 12 | Silver Layer | In Progress — BCRD, MICM and Pro Consumidor implemented in development |
 | 13 | Gold Layer | In Progress — FX, INF, COL, FUEL and CON KPIs implemented in development |
-| 14 | Databricks Workflows | In Progress — Lakeflow Job implemented (13 tasks, 4 parallel chains) |
+| 14 | Databricks Workflows | In Progress — Lakeflow Job implemented (16 tasks, 5 parallel chains) |
 | 15 | Monitoring & Data Quality | Planned |
 | 16 | Databricks SQL Analytics | Planned |
 | 17 | Databricks Dashboard | Planned |
-| 18 | Power BI Dashboard | In Progress — report built (6 pages: FX, Inflation, FX vs Inflation, Cost of Living, Fuel, Consumer) |
+| 18 | Power BI Dashboard | In Progress — report built (7 pages: FX, Inflation, FX vs Inflation, Cost of Living, Fuel, Consumer, Electricity) |
 | 19 | Testing & Validation | Planned |
 | 20 | Business Insights | Planned |
 | 21 | Portfolio Publication | Planned |
@@ -184,9 +184,28 @@ Design decisions:
 
 **Data finding:** fuel prices were frozen from August to December 2025 (for example Gasolina Premium RD$290 every week), so in the latest week the year-over-year and year-to-date changes are identical.
 
+### MEM Electricity Pipeline
+
+**Implementation status:** Implemented and verified in development (2026-10-24).
+
+| Layer | Notebook | Output | Result |
+|---|---|---|---|
+| Bronze | [06_MEM_Electricity_Bronze](../src/bronze/06_MEM_Electricity_Bronze.ipynb) | `bronze.mem_electricity_raw_rows` | 182 + 39 sheet rows from the July 2026 annex |
+| Silver | [06_MEM_Electricity_Silver](../src/silver/06_MEM_Electricity_Silver.ipynb) | `silver.mem_ede_monthly`, `silver.mem_tariffs_quarterly` | 35,446 monthly values (2009–Jul 2026); 4,430 tariff values (29 periods, 2020–Sep 2026); all enforced rules passed |
+| Gold | [06_MEM_Electricity_Gold](../src/gold/06_MEM_Electricity_Gold.ipynb) | `gold.electricity_metrics`, `gold.electricity_tariff_monthly`, `gold.electricity_bts1_bill` | 316 / 6,822 / 486 rows, ENE-001 to ENE-009, January 2020 to July 2026 |
+
+Design decisions:
+
+- **Source choice:** SIE tariff resolutions are scanned PDFs; the MEM monthly PDF report has text but one month per file. The MEM **annex workbook** has the full monthly history and the tariff table in machine-readable form, so it is the primary source. The latest annex replaces the previous one (each carries all history).
+- **Reconciliation:** average selling price matches the MEM PDF report for May 2026 (Edenorte RD$10.13/kWh, Edesur RD$10.51/kWh), enforced in Gold.
+- **Tariff periods** are expanded to months; the overlapping periods `abr - may 26` and `abr - jun 26` resolve to the later column. Before October 2021 the applied tariff is one value for all distributors.
+- **Reference vs applied tariff** gap is reported as a subsidy proxy, not as an official subsidy figure.
+
+**Data finding:** in July 2026 a 200 kWh BTS-1 bill is about RD$1,321 (Edenorte) with the applied tariff versus about RD$3,412 with the reference tariff; Edeeste's 12-month energy losses (about 56%) are roughly twice those of Edenorte and Edesur.
+
 ### Orchestration Status
 
-Lakeflow Job `rd_economic_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs four independent chains in parallel from the Git folder (branch `main`): BCRD FX, BCRD CPI (then cost of living), MICM fuel and Pro Consumidor. 13 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
+Lakeflow Job `rd_economic_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs five independent chains in parallel from the Git folder (branch `main`): BCRD FX, BCRD CPI (then cost of living), MICM fuel, Pro Consumidor and MEM electricity. 16 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -359,7 +378,7 @@ The current source assessment identified the following primary sources. BCRD fam
 | Ministerio de Industria, Comercio y Mipymes — MICM | Fuel Prices | Dominican Republic | Core Domestic |
 | Pro Consumidor | Consumer / Basic Basket Prices | Dominican Republic | Core Domestic |
 | Ministerio de Agricultura | Agricultural Prices | Dominican Republic | Core Domestic |
-| Superintendencia de Electricidad — SIE | Electricity Tariffs | Dominican Republic | Phase 2 |
+| Superintendencia de Electricidad — SIE (tariffs) and Ministerio de Energía y Minas — MEM (distributor performance annex) | Electricity Tariffs and Costs | Dominican Republic | Phase 2 — implemented |
 | U.S. EIA — WTI / Brent | International Oil | International | External Driver |
 | TBD | Housing / Rentals | Dominican Republic | Phase 2 / Pending |
 
@@ -749,10 +768,7 @@ Analytics
 The immediate priorities are:
 
 1. Obtain earlier Pro Consumidor reports to enable CON-006 to CON-008, and geographic detail for CON-009.
-2. Electricity (BQ-010): sources assessed on 2026-10-24.
-   - **MEM — Informe de Desempeño de las EDE** (monthly PDF with extractable text): average selling price (DOP/kWh) and purchase price (cUSD/kWh) by distributor, losses, collection. Example, May 2026: Edenorte DOP 10.13/kWh, Edesur DOP 10.51/kWh (Edeeste not in the extracted text). Recommended primary source; one file per month.
-   - **SIE — quarterly tariff resolutions** (e.g. SIE-079-2026-TF, July–September 2026): tariffs by block for regulated customers, published as scanned PDFs (no machine-readable text); usable only as a manually transcribed reference table.
-   - No CSV/XLSX dataset found on the open-data portal.
+2. Automate the monthly download of the MEM annex (electricity) so the Job can run on schedule.
 3. Assess Ministry of Agriculture agricultural-price datasets.
 4. Profile the BCRD monetary policy rate source and verify incremental extraction options for BCRD data.
 5. Consolidate source schemas, candidate business keys, quality rules, methodology notes, and KPI traceability as inputs to `05_Data_Dictionary`.
@@ -773,7 +789,7 @@ Source Assessment        ██████████  COMPLETE
 Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
 Databricks Engineering   ███████░░░  IN PROGRESS (BCRD, MICM, Pro Consumidor end to end + Job)
-Analytics & BI           ████░░░░░░  IN PROGRESS (Power BI report, 6 pages)
+Analytics & BI           ████░░░░░░  IN PROGRESS (Power BI report, 7 pages)
 ```
 
 ---

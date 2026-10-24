@@ -314,3 +314,54 @@ RETURN CALCULATE ( COUNTROWS ( 'Consumer Prices' ), 'Consumer Prices'[reference_
 CON MoM % Top 15 =
 VAR r = RANKX ( ALLSELECTED ( 'Consumer Prices'[product] ), [CON MoM %], , DESC )
 RETURN IF ( NOT ISBLANK ( [CON MoM %] ) && r <= 15, [CON MoM %] )
+
+// ---------------------------------------------------------------------
+// Electricity      = rd_economic_intelligence.gold.electricity_metrics (ENE-005..009)
+// Electricity Bill = rd_economic_intelligence.gold.electricity_bts1_bill (ENE-003..004)
+// Cards show the latest month for Total EDE; the bill uses Edesur, 200 kWh.
+// ---------------------------------------------------------------------
+
+ELEC Latest Month =
+CALCULATE ( MAX ( 'Electricity'[reference_month] ), REMOVEFILTERS ( 'Electricity'[distributor] ) )
+
+ELEC Selling Price =
+VAR m = [ELEC Latest Month]
+RETURN CALCULATE ( AVERAGE ( 'Electricity'[selling_price_dop_kwh] ), 'Electricity'[reference_month] = m, KEEPFILTERS ( 'Electricity'[distributor] = "Total EDE" ) )
+
+ELEC Selling Price YoY % =
+VAR m = [ELEC Latest Month]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Electricity'[selling_price_yoy_pct] ), 'Electricity'[reference_month] = m, KEEPFILTERS ( 'Electricity'[distributor] = "Total EDE" ) ), 100 )
+
+ELEC Purchase Price cUSD =
+VAR m = [ELEC Latest Month]
+RETURN CALCULATE ( AVERAGE ( 'Electricity'[purchase_price_cusd_kwh] ), 'Electricity'[reference_month] = m, KEEPFILTERS ( 'Electricity'[distributor] = "Total EDE" ) )
+
+ELEC Losses Rolling % =
+VAR m = [ELEC Latest Month]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Electricity'[losses_rolling_pct] ), 'Electricity'[reference_month] = m, KEEPFILTERS ( 'Electricity'[distributor] = "Total EDE" ) ), 100 )
+
+ELEC CRI Rolling % =
+VAR m = [ELEC Latest Month]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Electricity'[cri_rolling_pct] ), 'Electricity'[reference_month] = m, KEEPFILTERS ( 'Electricity'[distributor] = "Total EDE" ) ), 100 )
+
+ELEC Selling Price Series =
+AVERAGE ( 'Electricity'[selling_price_dop_kwh] )
+
+ELEC Losses Rolling Series =
+DIVIDE ( AVERAGE ( 'Electricity'[losses_rolling_pct] ), 100 )
+
+BTS1 Bill 200 kWh Applied =
+VAR m = CALCULATE ( MAX ( 'Electricity'[reference_month] ), REMOVEFILTERS ( 'Electricity' ) )
+VAR v = CALCULATE ( AVERAGE ( 'Electricity Bill'[applied_bill_dop] ), REMOVEFILTERS ( 'Electricity Bill' ), 'Electricity Bill'[reference_month] = m, 'Electricity Bill'[monthly_kwh] = 200, 'Electricity Bill'[distributor] = "Edesur" )
+RETURN "RD$" & FORMAT ( v, "#,0" )
+
+BTS1 Bill 200 kWh Reference =
+VAR m = CALCULATE ( MAX ( 'Electricity'[reference_month] ), REMOVEFILTERS ( 'Electricity' ) )
+VAR v = CALCULATE ( AVERAGE ( 'Electricity Bill'[reference_bill_dop] ), REMOVEFILTERS ( 'Electricity Bill' ), 'Electricity Bill'[reference_month] = m, 'Electricity Bill'[monthly_kwh] = 200, 'Electricity Bill'[distributor] = "Edesur" )
+RETURN "RD$" & FORMAT ( v, "#,0" )
+
+Bill 200 kWh Applied (Edesur) =
+CALCULATE ( AVERAGE ( 'Electricity Bill'[applied_bill_dop] ), 'Electricity Bill'[distributor] = "Edesur", 'Electricity Bill'[monthly_kwh] = 200 )
+
+Bill 200 kWh Reference (Edesur) =
+CALCULATE ( AVERAGE ( 'Electricity Bill'[reference_bill_dop] ), 'Electricity Bill'[distributor] = "Edesur", 'Electricity Bill'[monthly_kwh] = 200 )
