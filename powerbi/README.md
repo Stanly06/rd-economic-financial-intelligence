@@ -2,7 +2,7 @@
 
 Power BI is the external consumer of the Gold layer. This guide documents how the report connects to Databricks, the semantic model, and the first report pages.
 
-**Status:** report built in Power BI Desktop (4 pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living) on the model and measures below. The `.pbix` file is kept outside the repository.
+**Status:** report built in Power BI Desktop (6 pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices) on the model and measures below. The `.pbix` file is kept outside the repository.
 
 ---
 
@@ -34,6 +34,8 @@ Steps in Power BI Desktop:
 | `FX Monthly` | `gold.exchange_rate_monthly_metrics` | Month × currency pair × rate type | FX-004, FX-005 |
 | `Inflation` | `gold.inflation_metrics` | Month × CPI series | INF-001 to INF-006 |
 | `Cost of Living` | `gold.cost_of_living_metrics` | Month × segment | COL-001 to COL-003 |
+| `Fuel Prices` | `gold.fuel_price_metrics` | Price week × fuel | FUEL-001 to FUEL-012 |
+| `Consumer Prices` | `gold.consumer_price_metrics` | Month × product × presentation | CON-001 to CON-005 |
 | `Calendar` | DAX table | Day | — |
 
 Relationships (one-to-many, single direction from `Calendar`):
@@ -94,9 +96,28 @@ Business question BQ-003: *How is the Dominican peso performing against the U.S.
 | Bar chart | Axis `Cost of Living[segment]` (filter segment_type = region, latest month); value `Basket Cost` |
 | Line chart | Axis `Calendar[Month]`; value `Basket Cost`; legend `Cost of Living[segment]` (quintiles) |
 
+### Page 5 — Fuel Prices
+
+| Visual | Fields |
+|---|---|
+| Multi-value card | `Premium Price`, `Regular Price`, `Gasoil Regular Price`, `GLP Price` (latest week, RD$/gal) |
+| Line chart | Axis `Fuel Prices[period_start_date]`; value `Fuel Price Series`; legend `Fuel Prices[fuel_name]` |
+| Table | `fuel_name`, `Fuel Price`, `Fuel Weekly Change %`, `Fuel Monthly Change %`, `Fuel YoY %`, `Fuel YTD %`, `Fuel 52W High`, `Fuel 52W Low`, `Fuel Volatility 12W` |
+| Bar chart | Axis `fuel_name`; values `Fuel YoY %`, `Fuel YTD %` |
+
+### Page 6 — Consumer Prices
+
+| Visual | Fields |
+|---|---|
+| Multi-value card | `CON Products Tracked`, `CON Products Up`, `CON Products Down`, `CON MoM %` |
+| Table | `product`, `presentation`, `CON Avg Price`, `CON Median Price`, `CON Min Price`, `CON Max Price`, `CON Cheapest Segment`, `CON Most Expensive Segment`, `CON Spread %`, `CON MoM %` |
+| Bar chart | Axis `product`; value `CON MoM % Top 15` |
+
 ## 4. Data notes for report users
 
 - FX source extract covers 2021-09-20 to 2026-09-18. September 2021 and September 2026 are partial months.
 - 52-week and year-over-year FX values start in September 2022.
 - CPI base period: October 2019 – September 2020 = 100. All calculated inflation values reconcile with BCRD published variations.
 - The BCRD family basket is the ENGIH-2018 basket indexed by CPI. Its national and regional year-over-year change therefore equals headline and regional CPI inflation; the basket adds the **DOP level** and the **income-quintile** view. Quintile values before October 2020 are a BCRD retropolation.
+- Fuel prices are MICM official weekly prices in RD$ per gallon, from the XLSX file (the CSV rounds to whole pesos). Prices were frozen from August to December 2025, so in the latest week year-over-year and year-to-date changes are equal. GLP shows a one-week value of RD$163.55 (week of 2024-08-31) between weeks at about RD$132; it is kept as published and flagged as a probable source error.
+- Consumer prices cover July–September 2026 only. Month-over-month change compares the same product, presentation and retail segment in both months; year-over-year and regional comparisons are not available from this source.

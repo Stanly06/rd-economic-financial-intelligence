@@ -64,14 +64,14 @@ The platform only includes Dominican data. International data is allowed only as
 
 **Pro Consumidor basic-goods prices** (development)
 - [`05_ProConsumidor_Prices_Bronze`](src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) captures the XLSX and its report-period title (`bronze.proconsumidor_prices_raw`, 600 rows).
-- [`05_ProConsumidor_Prices_Silver`](src/silver/05_ProConsumidor_Prices_Silver.ipynb) builds `silver.proconsumidor_prices_monthly` (570 rows, 200 products, 5 retail segments, July–September 2026). 30 rows with years outside the report period are rejected, not corrected.
+- [`05_ProConsumidor_Prices_Silver`](src/silver/05_ProConsumidor_Prices_Silver.ipynb) builds `silver.proconsumidor_prices_monthly` (570 rows, 197 products, 5 retail segments, July–September 2026). 30 rows with years outside the report period are rejected, not corrected; product and presentation labels that differ only in capitals or spacing get one canonical label.
 - [`05_ProConsumidor_Prices_Gold`](src/gold/05_ProConsumidor_Prices_Gold.ipynb) calculates CON-001 to CON-005 into `gold.consumer_price_metrics`; month-over-month change is like-for-like by retail segment.
 
 **Orchestration**
 - Lakeflow Job `rd_economic_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): four independent chains (BCRD FX, BCRD CPI, MICM fuel, Pro Consumidor) run in parallel, Bronze → Silver → Gold within each chain (13 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
 
 **Power BI**
-- [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for four pages: Foreign Exchange, Inflation, FX vs Inflation and Cost of Living.
+- [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for six pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices and Consumer Prices.
 
 ## Target architecture
 
@@ -95,7 +95,7 @@ flowchart LR
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
 | Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM and Pro Consumidor complete + Job; Agriculture pending; electricity has no source yet) |
-| Databricks SQL, dashboard and Power BI | In progress (Power BI model and measures defined) |
+| Databricks SQL, dashboard and Power BI | In progress (Power BI report: 6 pages on FX, inflation, cost of living, fuel and consumer prices) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.
 

@@ -950,7 +950,7 @@ gold.economic_relationship_metrics
 
 # 13. Consumer & Basic Basket KPIs
 
-**Validation status:** Partially validated (2026-10-23) against the Pro Consumidor file "Precios Productos de Primera Necesidad, por segmento de comercialización", July–September 2026 (200 products, 5 retail segments: almacenes, colmados, mercados, supermercados grandes, supermercados pequeños). Stored in `gold.consumer_price_metrics` (grain: month × product × presentation, 468 rows).
+**Validation status:** Partially validated (2026-10-23) against the Pro Consumidor file "Precios Productos de Primera Necesidad, por segmento de comercialización", July–September 2026 (197 products, 5 retail segments: almacenes, colmados, mercados, supermercados grandes, supermercados pequeños). Stored in `gold.consumer_price_metrics` (grain: month × product × presentation, 461 rows).
 
 | KPI ID | KPI Name | Unit | Status |
 |---|---|---|---|
@@ -958,7 +958,7 @@ gold.economic_relationship_metrics
 | **CON-002** | Median Product Price | DOP / unit | Validated |
 | **CON-003** | Minimum Product Price | DOP / unit | Validated (with cheapest segment) |
 | **CON-004** | Maximum Product Price | DOP / unit | Validated (with most expensive segment) |
-| **CON-005** | Product MoM % | % | Validated, like-for-like: average of the per-segment change for segments priced in both consecutive months (192 of 468 rows) |
+| **CON-005** | Product MoM % | % | Validated, like-for-like: average of the per-segment change for segments priced in both consecutive months (189 of 461 rows) |
 | **CON-006** | Product YoY % | % | Not calculable: the source covers 3 months |
 | **CON-007** | Product YTD % | % | Not calculable: the source covers 3 months |
 | **CON-008** | Product Price Volatility | % | Not calculable: too few observations per product |
@@ -969,6 +969,7 @@ Source decisions (from profiling):
 
 - **XLSX is used**; the CSV has inconsistent delimiters.
 - The file title states the report period. **30 rows whose year is outside that period** (2027, 2035, 2041 and others, clear capture errors) are rejected to `quality.dq_rejected_records`, not corrected.
+- Product and presentation labels written with different capitals or spacing (21 rows, e.g. "Aceite de Soya Crisol" / "Aceite de soya Crisol") are mapped to one canonical label; the source label is kept. Labels with different words are never merged.
 - Prices are compared only within the same product **and** presentation. Because the segments priced change from month to month, the month-over-month change is never computed on the cross-segment average (that would mix price changes with sample changes).
 
 Potential analytical dimensions:

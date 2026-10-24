@@ -198,3 +198,119 @@ CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), REMOVEFILTERS ( 'Cost
 
 Q5 Basket Cost (monthly axis) =
 CALCULATE ( AVERAGE ( 'Cost of Living'[basket_cost_dop] ), REMOVEFILTERS ( 'Cost of Living'[segment_type] ), 'Cost of Living'[segment] = "Quintil 5" )
+
+// ---------------------------------------------------------------------
+// Fuel Prices  = rd_economic_intelligence.gold.fuel_price_metrics (FUEL-001..012)
+// Consumer Prices = rd_economic_intelligence.gold.consumer_price_metrics (CON-001..005)
+// Fuel measures cover the five retail fuels: gasolina premium/regular, gasoil optimo/regular, GLP.
+// No relationship to Calendar: both pages use their own date columns.
+// ---------------------------------------------------------------------
+
+Fuel Latest Week =
+CALCULATE ( MAX ( 'Fuel Prices'[period_start_date] ), REMOVEFILTERS ( 'Fuel Prices'[fuel_name], 'Fuel Prices'[fuel_code] ) )
+
+Fuel Latest Week Label =
+VAR d = [Fuel Latest Week]
+VAR e = CALCULATE ( MAX ( 'Fuel Prices'[period_end_date] ), REMOVEFILTERS ( 'Fuel Prices'[fuel_name], 'Fuel Prices'[fuel_code] ), 'Fuel Prices'[period_start_date] = d )
+RETURN "Semana " & FORMAT ( d, "dd/mm/yyyy" ) & " – " & FORMAT ( e, "dd/mm/yyyy" ) & " · RD$ por galón · Fuente: MICM"
+
+Fuel Price =
+VAR d = [Fuel Latest Week]
+RETURN CALCULATE ( AVERAGE ( 'Fuel Prices'[price_dop] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) )
+
+Fuel Weekly Change % =
+VAR d = [Fuel Latest Week]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Fuel Prices'[weekly_change_pct] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) ), 100 )
+
+Fuel Monthly Change % =
+VAR d = [Fuel Latest Week]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Fuel Prices'[monthly_change_pct] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) ), 100 )
+
+Fuel YoY % =
+VAR d = [Fuel Latest Week]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Fuel Prices'[yoy_change_pct] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) ), 100 )
+
+Fuel YTD % =
+VAR d = [Fuel Latest Week]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Fuel Prices'[ytd_change_pct] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) ), 100 )
+
+Fuel 52W High =
+VAR d = [Fuel Latest Week]
+RETURN CALCULATE ( AVERAGE ( 'Fuel Prices'[high_52w_dop] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) )
+
+Fuel 52W Low =
+VAR d = [Fuel Latest Week]
+RETURN CALCULATE ( AVERAGE ( 'Fuel Prices'[low_52w_dop] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) )
+
+Fuel Volatility 12W =
+VAR d = [Fuel Latest Week]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Fuel Prices'[volatility_12w_pct] ), 'Fuel Prices'[period_start_date] = d, KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) ), 100 )
+
+Fuel Price Series =
+CALCULATE ( AVERAGE ( 'Fuel Prices'[price_dop] ), KEEPFILTERS ( 'Fuel Prices'[fuel_code] IN { "gasolina_premium", "gasolina_regular", "gasoil_optimo", "gasoil_regular", "glp" } ) )
+
+Premium Price =
+CALCULATE ( [Fuel Price], 'Fuel Prices'[fuel_code] = "gasolina_premium" )
+
+Regular Price =
+CALCULATE ( [Fuel Price], 'Fuel Prices'[fuel_code] = "gasolina_regular" )
+
+Gasoil Regular Price =
+CALCULATE ( [Fuel Price], 'Fuel Prices'[fuel_code] = "gasoil_regular" )
+
+GLP Price =
+CALCULATE ( [Fuel Price], 'Fuel Prices'[fuel_code] = "glp" )
+
+CON Latest Month =
+CALCULATE ( MAX ( 'Consumer Prices'[reference_month] ), REMOVEFILTERS ( 'Consumer Prices'[product], 'Consumer Prices'[presentation] ) )
+
+CON Period Label =
+"Mes de referencia: " & FORMAT ( [CON Latest Month], "mmmm yyyy" ) & " · Precios en RD$ · Fuente: Pro Consumidor (julio–septiembre 2026)"
+
+CON Avg Price =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( AVERAGE ( 'Consumer Prices'[avg_price_dop] ), 'Consumer Prices'[reference_month] = m )
+
+CON Median Price =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( AVERAGE ( 'Consumer Prices'[median_price_dop] ), 'Consumer Prices'[reference_month] = m )
+
+CON Min Price =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( MIN ( 'Consumer Prices'[min_price_dop] ), 'Consumer Prices'[reference_month] = m )
+
+CON Max Price =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( MAX ( 'Consumer Prices'[max_price_dop] ), 'Consumer Prices'[reference_month] = m )
+
+CON MoM % =
+VAR m = [CON Latest Month]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Consumer Prices'[mom_change_pct] ), 'Consumer Prices'[reference_month] = m ), 100 )
+
+CON Spread % =
+VAR m = [CON Latest Month]
+RETURN DIVIDE ( CALCULATE ( AVERAGE ( 'Consumer Prices'[price_spread_pct] ), 'Consumer Prices'[reference_month] = m ), 100 )
+
+CON Cheapest Segment =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( MAX ( 'Consumer Prices'[cheapest_segment] ), 'Consumer Prices'[reference_month] = m )
+
+CON Most Expensive Segment =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( MAX ( 'Consumer Prices'[most_expensive_segment] ), 'Consumer Prices'[reference_month] = m )
+
+CON Products Tracked =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( DISTINCTCOUNT ( 'Consumer Prices'[product] ), 'Consumer Prices'[reference_month] = m )
+
+CON Products Up =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( COUNTROWS ( 'Consumer Prices' ), 'Consumer Prices'[reference_month] = m, 'Consumer Prices'[mom_change_pct] > 0 )
+
+CON Products Down =
+VAR m = [CON Latest Month]
+RETURN CALCULATE ( COUNTROWS ( 'Consumer Prices' ), 'Consumer Prices'[reference_month] = m, 'Consumer Prices'[mom_change_pct] < 0 )
+
+CON MoM % Top 15 =
+VAR r = RANKX ( ALLSELECTED ( 'Consumer Prices'[product] ), [CON MoM %], , DESC )
+RETURN IF ( NOT ISBLANK ( [CON MoM %] ) && r <= 15, [CON MoM %] )

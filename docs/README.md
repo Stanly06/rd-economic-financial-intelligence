@@ -27,7 +27,7 @@ The documentation follows the complete project lifecycle, from business discover
 | 15 | Monitoring & Data Quality | Planned |
 | 16 | Databricks SQL Analytics | Planned |
 | 17 | Databricks Dashboard | Planned |
-| 18 | Power BI Dashboard | In Progress — connection, model and measures defined |
+| 18 | Power BI Dashboard | In Progress — report built (6 pages: FX, Inflation, FX vs Inflation, Cost of Living, Fuel, Consumer) |
 | 19 | Testing & Validation | Planned |
 | 20 | Business Insights | Planned |
 | 21 | Portfolio Publication | Planned |
@@ -171,8 +171,8 @@ Reconciliation with BCRD published values (all passed): monthly variation 5,550/
 | Silver | [04_MICM_Fuel_Prices_Silver](../src/silver/04_MICM_Fuel_Prices_Silver.ipynb) | `silver.micm_fuel_prices_weekly` | 19,096 rows, 22 fuels, 2010-01-02 to 2026-08-28; 4 superseded weeks rejected |
 | Gold | [04_MICM_Fuel_Prices_Gold](../src/gold/04_MICM_Fuel_Prices_Gold.ipynb) | `gold.fuel_price_metrics` | 15,296 rows, FUEL-001 to FUEL-012 |
 | Bronze | [05_ProConsumidor_Prices_Bronze](../src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) | `bronze.proconsumidor_prices_raw` | 600 rows plus the report-period title |
-| Silver | [05_ProConsumidor_Prices_Silver](../src/silver/05_ProConsumidor_Prices_Silver.ipynb) | `silver.proconsumidor_prices_monthly` | 570 rows, 200 products, 5 retail segments; 30 rejected (year outside report period) |
-| Gold | [05_ProConsumidor_Prices_Gold](../src/gold/05_ProConsumidor_Prices_Gold.ipynb) | `gold.consumer_price_metrics` | 468 rows, CON-001 to CON-005 |
+| Silver | [05_ProConsumidor_Prices_Silver](../src/silver/05_ProConsumidor_Prices_Silver.ipynb) | `silver.proconsumidor_prices_monthly` | 570 rows, 197 products, 5 retail segments; 30 rejected (year outside report period); 21 label variants canonicalized |
+| Gold | [05_ProConsumidor_Prices_Gold](../src/gold/05_ProConsumidor_Prices_Gold.ipynb) | `gold.consumer_price_metrics` | 461 rows, CON-001 to CON-005 |
 
 Design decisions:
 
@@ -770,7 +770,7 @@ Source Assessment        ██████████  COMPLETE
 Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
 Databricks Engineering   ███████░░░  IN PROGRESS (BCRD, MICM, Pro Consumidor end to end + Job)
-Analytics & BI           ██░░░░░░░░  IN PROGRESS (Power BI model and measures)
+Analytics & BI           ████░░░░░░  IN PROGRESS (Power BI report, 6 pages)
 ```
 
 ---

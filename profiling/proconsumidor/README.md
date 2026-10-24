@@ -120,7 +120,7 @@ Decisions applied:
 
 - XLSX is used; the CSV has inconsistent delimiters.
 - 30 rows whose year is outside the report period stated in the title (July–September 2026) are rejected to `quality.dq_rejected_records`, not corrected (question 1 above stays open with the source).
-- Grain: month × product × presentation × retail segment (5 segments). 570 valid rows, 200 products.
+- Grain: month × product × presentation × retail segment (5 segments). 570 valid rows, 197 products after mapping 21 label variants (different capitals or spacing) to one canonical label.
 - CON-001 to CON-005 calculated; month-over-month is like-for-like by segment because the segments priced change each month. CON-006 to CON-009 need more history or geography (questions 3 and 4); CON-010 needs a methodology.
 
 Related: [Project Documentation Roadmap](../../docs/README.md) · [MICM Fuel Prices Profiling](../micm/README.md)
