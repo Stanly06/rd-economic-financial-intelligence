@@ -2,7 +2,7 @@
 
 Power BI is the external consumer of the Gold layer. This guide documents how the report connects to Databricks, the semantic model, and the first report pages.
 
-**Status:** connection and model specified; report build in progress.
+**Status:** report built in Power BI Desktop (4 pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living) on the model and measures below. The `.pbix` file is kept outside the repository.
 
 ---
 
