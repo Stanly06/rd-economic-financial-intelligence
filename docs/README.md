@@ -20,10 +20,10 @@ The documentation follows the complete project lifecycle, from business discover
 | 08 | Logical & Physical Data Model | Planned |
 | 09 | Data Quality Rules & Data Contracts | Planned |
 | 10 | Databricks Environment Setup | In Progress — Initial infrastructure validated |
-| 11 | Bronze Layer | In Progress — first pipeline (BCRD USD/DOP) implemented in development |
-| 12 | Silver Layer | In Progress — first transformation (BCRD USD/DOP) implemented in development |
-| 13 | Gold Layer | In Progress — first KPI model (USD/DOP, FX-001 to FX-009) implemented in development |
-| 14 | Databricks Workflows | In Progress — BCRD Lakeflow Job implemented (7 tasks) |
+| 11 | Bronze Layer | In Progress — BCRD, MICM and Pro Consumidor implemented in development |
+| 12 | Silver Layer | In Progress — BCRD, MICM and Pro Consumidor implemented in development |
+| 13 | Gold Layer | In Progress — FX, INF, COL, FUEL and CON KPIs implemented in development |
+| 14 | Databricks Workflows | In Progress — Lakeflow Job implemented (13 tasks, 4 parallel chains) |
 | 15 | Monitoring & Data Quality | Planned |
 | 16 | Databricks SQL Analytics | Planned |
 | 17 | Databricks Dashboard | Planned |
@@ -48,13 +48,13 @@ Business Discovery and the initial Data Source Assessment are complete. The proj
 |---|---|---|
 | BCRD — USD/DOP Exchange Rates | Initial profiling completed | Historical Excel reviewed; official incremental extraction remains unconfirmed |
 | BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Validated; Bronze, Silver and Gold implemented | Six workbooks parsed into five monthly Silver tables with 0 rejects; calculated inflation reconciles with BCRD published values |
-| MICM — Fuel Prices | Profiling documented; reconciliation in progress | Official CSV and XLSX obtained; format differences, repeated periods and zero prices require resolution |
-| Pro Consumidor — Consumer Prices | Initial profiling completed; validation in progress | CSV/XLSX reviewed; anomalous year values, historical coverage, geographic granularity and KPI feasibility require further validation |
+| MICM — Fuel Prices | Validated; pipelines implemented | XLSX authoritative (CSV = XLSX rounded to whole pesos, 0 differences on 19,184 values); zero = not published; four December 2023 weeks published twice resolved to the later block |
+| Pro Consumidor — Consumer Prices | Validated for Jul–Sep 2026; pipelines implemented | XLSX used (CSV malformed); 30 rows with years outside the report period rejected; only 3 months and no geography, so YoY, YTD, volatility and regional KPIs are not calculable yet |
 | Ministry of Agriculture — Agricultural Prices | Preliminary profiling and CSV/XLSX reconciliation completed | Wholesale and retail files (Aug 2017 – Sep 2026) profiled and reconciled; quality validation and KPI feasibility (AGR-001 to AGR-007) remain open |
 | EIA — WTI / Brent | Not started | External driver only under RD-First governance |
 
 **Current phase:** Data Discovery & Profiling  
-**Next milestone:** Complete MICM CSV/XLSX reconciliation, validate Pro Consumidor data-quality anomalies and KPI feasibility, assess Ministry of Agriculture datasets, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target_Mapping`.
+**Next milestone:** Build the Ministry of Agriculture pipelines, find a validated electricity-tariff source, obtain more Pro Consumidor history, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target_Mapping`.
 
 **Technical documentation:**
 - [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
@@ -96,7 +96,7 @@ Design rules applied:
 
 **Technical finding:** Databricks Free Edition serverless compute does not include `openpyxl`, which pandas requires to read `.xlsx` files. Every Excel-based ingestion notebook installs a pinned version (`openpyxl==3.1.5`) in its first code cell.
 
-**Important:** This is a development implementation, not a production pipeline. Orchestration (Lakeflow Jobs), incremental loading and the Silver and Gold layers are still pending.
+**Important:** This is a development implementation, not a production pipeline. Incremental loading is still pending (see the MICM and Pro Consumidor section below for the other Bronze pipelines).
 
 ### Silver Layer Status
 
@@ -161,9 +161,32 @@ Reconciliation with BCRD published values (all passed): monthly variation 5,550/
 
 **Data finding:** the family basket is the ENGIH-2018 basket indexed by CPI, so its national and regional year-over-year change equals CPI inflation. The cost-of-living KPIs add the DOP level and the income-quintile view, not an independent inflation signal.
 
+### MICM Fuel and Pro Consumidor Pipelines
+
+**Implementation status:** Implemented and verified in development.
+
+| Layer | Notebook | Output | Result |
+|---|---|---|---|
+| Bronze | [04_MICM_Fuel_Prices_Bronze](../src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) | `bronze.micm_fuel_prices_raw` | 872 XLSX + 872 CSV rows, all source columns kept as JSON |
+| Silver | [04_MICM_Fuel_Prices_Silver](../src/silver/04_MICM_Fuel_Prices_Silver.ipynb) | `silver.micm_fuel_prices_weekly` | 19,096 rows, 22 fuels, 2010-01-02 to 2026-08-28; 4 superseded weeks rejected |
+| Gold | [04_MICM_Fuel_Prices_Gold](../src/gold/04_MICM_Fuel_Prices_Gold.ipynb) | `gold.fuel_price_metrics` | 15,296 rows, FUEL-001 to FUEL-012 |
+| Bronze | [05_ProConsumidor_Prices_Bronze](../src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) | `bronze.proconsumidor_prices_raw` | 600 rows plus the report-period title |
+| Silver | [05_ProConsumidor_Prices_Silver](../src/silver/05_ProConsumidor_Prices_Silver.ipynb) | `silver.proconsumidor_prices_monthly` | 570 rows, 200 products, 5 retail segments; 30 rejected (year outside report period) |
+| Gold | [05_ProConsumidor_Prices_Gold](../src/gold/05_ProConsumidor_Prices_Gold.ipynb) | `gold.consumer_price_metrics` | 468 rows, CON-001 to CON-005 |
+
+Design decisions:
+
+- **MICM: XLSX is authoritative.** Every CSV value equals the XLSX value rounded to whole pesos (0 differences above 0.5 on 19,184 values), so the CSV loses precision. The CSV stays in Bronze for an observational reconciliation check.
+- **MICM price weeks** are rebuilt from `DIA DESDE`, `DIA HASTA` and a month label that is sometimes the start month, sometimes the end month, and has typos ([`src/shared/micm_parsers.py`](../src/shared/micm_parsers.py)). Source gaps (3) and overlaps (3) are reported, not altered.
+- **MICM zero prices** mean "not published" (NULL, `is_published = false`) and are excluded from KPIs.
+- **Pro Consumidor anomalous years** (2027 to 2041 in a July–September 2026 report) are rejected, not corrected.
+- **Pro Consumidor month-over-month** is like-for-like by retail segment: the segments priced change from month to month, so comparing cross-segment averages would mix price changes with sample changes.
+
+**Data finding:** fuel prices were frozen from August to December 2025 (for example Gasolina Premium RD$290 every week), so in the latest week the year-over-year and year-to-date changes are identical.
+
 ### Orchestration Status
 
-Lakeflow Job `rd_bcrd_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs the FX chain and the CPI chain in parallel from the Git folder (branch `main`): 7 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
+Lakeflow Job `rd_economic_medallion_pipeline` ([definition](../resources/jobs/bcrd_medallion_pipeline.job.json)) runs four independent chains in parallel from the Git folder (branch `main`): BCRD FX, BCRD CPI (then cost of living), MICM fuel and Pro Consumidor. 13 notebook tasks on serverless compute, one retry per task, failure e-mail alerts, maximum one concurrent run. A weekday 07:00 (America/Santo_Domingo) schedule is defined but **paused** while source files are uploaded manually.
 
 The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
 
@@ -486,8 +509,8 @@ The source-discovery sequence follows business priority and source readiness:
 01. BCRD — USD/DOP Exchange Rates [initial profiling completed]
 02. BCRD — CPI and Family Basket datasets [validated; pipelines implemented]
 03. BCRD — Monetary Policy Rate [pending source-file profiling]
-04. MICM — Dominican Fuel Prices [reconciliation in progress]
-05. Pro Consumidor — Consumer / Basic Basket Prices [initial profiling completed; validation in progress]
+04. MICM — Dominican Fuel Prices [validated; pipelines implemented]
+05. Pro Consumidor — Consumer / Basic Basket Prices [validated for Jul–Sep 2026; pipelines implemented]
 06. Ministry of Agriculture — Agricultural Prices [preliminary profiling and reconciliation completed]
 07. EIA — WTI / Brent external oil driver [pending]
 ```
@@ -725,13 +748,13 @@ Analytics
 
 The immediate priorities are:
 
-1. Resolve or explicitly document the MICM CSV/XLSX value discrepancies, repeated reporting periods, units and zero-value semantics. Do not assume one format is authoritative without verification.
-2. Assess official Pro Consumidor consumer-price datasets and their coverage, grain, format and reuse constraints.
+1. Obtain earlier Pro Consumidor reports to enable CON-006 to CON-008, and geographic detail for CON-009.
+2. Identify a validated electricity-tariff source (e.g. the electricity regulator) for BQ-010.
 3. Assess Ministry of Agriculture agricultural-price datasets.
 4. Profile the BCRD monetary policy rate source and verify incremental extraction options for BCRD data.
 5. Consolidate source schemas, candidate business keys, quality rules, methodology notes, and KPI traceability as inputs to `05_Data_Dictionary`.
 
-The MICM dataset is **not production approved**. The existence of source files or preliminary profiling is not evidence that all source values are reconciled.
+No dataset is **production approved** yet. Production approval requires the data dictionary, source-to-target mapping and solution architecture to be reviewed.
 
 **GitHub policy:** commit source profiling notes, mappings, tests and code; preserve original source files outside the public repository until the data publication and repository policy is reviewed.
 
@@ -746,7 +769,7 @@ Business Discovery       ██████████  COMPLETE
 Source Assessment        ██████████  COMPLETE
 Data Profiling           ██████░░░░  IN PROGRESS (illustrative)
 Data Modeling            ░░░░░░░░░░  PLANNED
-Databricks Engineering   ██████░░░░  IN PROGRESS (BCRD end to end: FX, CPI, basket + Job)
+Databricks Engineering   ███████░░░  IN PROGRESS (BCRD, MICM, Pro Consumidor end to end + Job)
 Analytics & BI           ██░░░░░░░░  IN PROGRESS (Power BI model and measures)
 ```
 

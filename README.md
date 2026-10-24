@@ -4,7 +4,7 @@ An end-to-end **Data Engineering + Business Intelligence** project that will cen
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
-> **Status: in progress. All BCRD sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket are ingested, validated and modeled into Gold KPIs (FX, INF and COL), orchestrated by one Lakeflow Job, and reconciled with BCRD published values. MICM, Pro Consumidor and Agriculture pipelines will follow once their profiling issues are resolved.
+> **Status: in progress. BCRD, MICM and Pro Consumidor sources run end to end in development.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), orchestrated by one Lakeflow Job. Agriculture and electricity are next; electricity has no validated source yet.
 
 ---
 
@@ -21,8 +21,8 @@ The platform only includes Dominican data. International data is allowed only as
 | Banco Central (BCRD) | USD/DOP exchange rate | Core | Validated; pipelines implemented (Bronze, Silver, Gold) |
 | Banco Central (BCRD) | CPI, core CPI, CPI by group and region, family basket | Core | Validated; pipelines implemented (Bronze, Silver, Gold) |
 | Banco Central (BCRD) | Monetary policy rate | Core | Pending |
-| MICM | Fuel prices | Core | Profiled; CSV vs. XLSX reconciliation in progress |
-| Pro Consumidor | Consumer / basic basket prices | Core | Initial profiling completed; KPI feasibility in progress |
+| MICM | Fuel prices | Core | Validated (XLSX authoritative); pipelines implemented (Bronze, Silver, Gold) |
+| Pro Consumidor | Consumer / basic basket prices | Core | Validated for Jul–Sep 2026; pipelines implemented (Bronze, Silver, Gold). YoY, YTD, volatility and regional KPIs need more history |
 | Ministry of Agriculture | Agricultural prices (wholesale and retail) | Core | Preliminary profiling and CSV vs. XLSX reconciliation completed; quality validation open |
 | U.S. EIA | WTI / Brent | External driver | Pending |
 
@@ -57,8 +57,18 @@ The platform only includes Dominican data. International data is allowed only as
 - [`02_BCRD_CPI_Gold`](src/gold/02_BCRD_CPI_Gold.ipynb) calculates inflation KPIs INF-001 to INF-006 into `gold.inflation_metrics`, reconciled with BCRD published variations (monthly 5,550/5,550; 12-month and year-to-date 808/808).
 - [`03_BCRD_Cost_of_Living_Gold`](src/gold/03_BCRD_Cost_of_Living_Gold.ipynb) calculates cost-of-living KPIs COL-001 to COL-003 into `gold.cost_of_living_metrics`.
 
+**MICM fuel prices** (development)
+- [`04_MICM_Fuel_Prices_Bronze`](src/bronze/04_MICM_Fuel_Prices_Bronze.ipynb) captures the weekly XLSX and CSV row by row (`bronze.micm_fuel_prices_raw`, 872 weeks each).
+- [`04_MICM_Fuel_Prices_Silver`](src/silver/04_MICM_Fuel_Prices_Silver.ipynb) resolves the price weeks with [`src/shared/micm_parsers.py`](src/shared/micm_parsers.py) and builds `silver.micm_fuel_prices_weekly` (22 fuels, 2010-01-02 to 2026-08-28, 19,096 rows). XLSX is authoritative: every CSV value equals the XLSX value rounded to whole pesos. Zero prices are treated as not published; four weeks published twice (December 2023) keep the later file row.
+- [`04_MICM_Fuel_Prices_Gold`](src/gold/04_MICM_Fuel_Prices_Gold.ipynb) calculates FUEL-001 to FUEL-012 into `gold.fuel_price_metrics` (15,296 rows).
+
+**Pro Consumidor basic-goods prices** (development)
+- [`05_ProConsumidor_Prices_Bronze`](src/bronze/05_ProConsumidor_Prices_Bronze.ipynb) captures the XLSX and its report-period title (`bronze.proconsumidor_prices_raw`, 600 rows).
+- [`05_ProConsumidor_Prices_Silver`](src/silver/05_ProConsumidor_Prices_Silver.ipynb) builds `silver.proconsumidor_prices_monthly` (570 rows, 200 products, 5 retail segments, July–September 2026). 30 rows with years outside the report period are rejected, not corrected.
+- [`05_ProConsumidor_Prices_Gold`](src/gold/05_ProConsumidor_Prices_Gold.ipynb) calculates CON-001 to CON-005 into `gold.consumer_price_metrics`; month-over-month change is like-for-like by retail segment.
+
 **Orchestration**
-- Lakeflow Job `rd_bcrd_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): FX and CPI chains run in parallel (7 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
+- Lakeflow Job `rd_economic_medallion_pipeline` ([definition](resources/jobs/bcrd_medallion_pipeline.job.json)): four independent chains (BCRD FX, BCRD CPI, MICM fuel, Pro Consumidor) run in parallel, Bronze → Silver → Gold within each chain (13 tasks), with retries, failure e-mail alerts and a weekday schedule (paused while source files are uploaded manually). Re-runs are idempotent.
 
 **Power BI**
 - [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for four pages: Foreign Exchange, Inflation, FX vs Inflation and Cost of Living.
@@ -84,7 +94,7 @@ flowchart LR
 | Data discovery & profiling | In progress |
 | Data dictionary & source-to-target mapping | Planned |
 | Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD complete: FX, CPI, basket + Job; MICM, Pro Consumidor, Agriculture pending) |
+| Bronze / Silver / Gold pipelines + Jobs | In progress (BCRD, MICM and Pro Consumidor complete + Job; Agriculture pending; electricity has no source yet) |
 | Databricks SQL, dashboard and Power BI | In progress (Power BI model and measures defined) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.

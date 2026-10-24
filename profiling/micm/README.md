@@ -1,7 +1,7 @@
 # MICM Fuel Prices — Data Discovery & Profiling
 
 **Project:** RD Economic & Financial Intelligence Platform  
-**Status:** Discovery / conditional backfill candidate — **not production approved**  
+**Status:** Validated in development (2026-10-23); pipelines implemented — **not production approved**  
 **Source:** Dominican Republic Ministry of Industry, Commerce and MSMEs (MICM), via Dominican open-data portal  
 **Business traceability:** Fuel price monitoring and FUEL-001 through FUEL-012 in `03_Business_Questions_KPI_Catalog`.
 
@@ -21,8 +21,8 @@
 | Last listed price interval | 22–28 August 2026 |
 | Observed grain | One record per listed weekly price interval, with exceptions |
 | Blank CSV field values | 0 |
-| Repeated period keys | 3 distinct periods repeated twice each |
-| Repeated periods | 9–15, 16–22, 23–29 December 2023 |
+| Repeated period keys | 4 consecutive weeks published twice |
+| Repeated periods | 9–15, 16–22, 23–29 December 2023 and 30 December 2023 – 5 January 2024 |
 
 **Caution:** No blank field values does not imply complete or valid prices. Zero values and publication gaps require separate tests. Weekly continuity, units, precision and date semantics remain to be validated.
 
@@ -30,7 +30,19 @@
 
 Prior comparison found different numeric precision between formats, including gasoline regular for the first period (CSV `151` vs XLSX `150.7`). Therefore **CSV and XLSX must not be assumed value-equivalent**. Use XLSX as a *candidate* precision-preserving backfill source, pending comprehensive field-level reconciliation against official publication values. Avoid unverified global discrepancy counts.
 
-## Candidate Silver schema (subject to profiling)
+## Resolution (2026-10-23)
+
+| Open question | Decision | Evidence |
+|---|---|---|
+| Authoritative format | **XLSX** | Every CSV value equals the XLSX value rounded to whole pesos: 0 differences above 0.5 on 19,184 comparable values. The CSV loses centavos (e.g. `151` vs `150.7`). |
+| Repeated December 2023 weeks | Keep the **later block** in the file; earlier rows go to `quality.dq_rejected_records` | The later block follows the file order of publication; values differ for some fuels. |
+| Zero prices | **Not published** (NULL, `is_published = false`) | Zeros match periods when a product was not sold, e.g. Gasoil Óptimo before November 2012. 3,800 values. |
+| Unit | DOP per gallon | Unit used in MICM weekly price notices; to confirm in the dataset metadata. |
+| Week dates | Rebuilt by [`src/shared/micm_parsers.py`](../../src/shared/micm_parsers.py) | The month label is sometimes the start, sometimes the end month, and has typos (`Febreo`). 864 weeks contiguous; 3 gaps and 3 overlaps reported. |
+
+Implemented in `src/bronze|silver|gold/04_MICM_Fuel_Prices_*` (see [docs](../../docs/README.md)).
+
+## Candidate Silver schema (original proposal)
 
 | Field | Meaning |
 |---|---|

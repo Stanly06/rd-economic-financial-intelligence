@@ -790,34 +790,32 @@ gold.monetary_policy_metrics
 
 # 10. Fuel Market KPIs
 
-| KPI ID | KPI Name | Unit | Granularity |
-|---|---|---|---|
-| **FUEL-001** | Current Fuel Price | DOP / source unit | Weekly |
-| **FUEL-002** | Previous Week Price | DOP / source unit | Weekly |
-| **FUEL-003** | Weekly Price Change | DOP / source unit | Weekly |
-| **FUEL-004** | Weekly Price Change % | % | Weekly |
-| **FUEL-005** | Monthly Price Change % | % | Monthly |
-| **FUEL-006** | YoY Price Change % | % | Weekly / Monthly |
-| **FUEL-007** | YTD Price Change % | % | Weekly |
-| **FUEL-008** | 4-Week Moving Average | DOP / source unit | Weekly |
-| **FUEL-009** | 12-Week Moving Average | DOP / source unit | Weekly |
-| **FUEL-010** | 52-Week High | DOP / source unit | Weekly |
-| **FUEL-011** | 52-Week Low | DOP / source unit | Weekly |
-| **FUEL-012** | Fuel Price Volatility | % | Rolling Window |
+**Validation status:** Validated (2026-10-23) against the official MICM weekly fuel-price file (`precios-de-combustibles-2010-2026`, 872 published weeks, 2010-01-02 to 2026-08-28). Stored in `gold.fuel_price_metrics` (grain: price week × fuel, 15,296 rows).
 
-Potential fuel dimension values may include:
+| KPI ID | KPI Name | Unit | Granularity | Status |
+|---|---|---|---|---|
+| **FUEL-001** | Current Fuel Price | DOP/gallon | Weekly | Validated |
+| **FUEL-002** | Previous Week Price | DOP/gallon | Weekly | Validated |
+| **FUEL-003** | Weekly Price Change | DOP/gallon | Weekly | Validated |
+| **FUEL-004** | Weekly Price Change % | % | Weekly | Validated |
+| **FUEL-005** | Monthly Price Change % | % | Weekly (vs last week of previous month) | Validated |
+| **FUEL-006** | YoY Price Change % | % | Weekly (vs week 364–371 days earlier) | Validated |
+| **FUEL-007** | YTD Price Change % | % | Weekly (vs last week of previous year) | Validated |
+| **FUEL-008** | 4-Week Moving Average | DOP/gallon | Weekly | Validated |
+| **FUEL-009** | 12-Week Moving Average | DOP/gallon | Weekly | Validated |
+| **FUEL-010** | 52-Week High | DOP/gallon | Weekly (trailing 364 days) | Validated |
+| **FUEL-011** | 52-Week Low | DOP/gallon | Weekly (trailing 364 days) | Validated |
+| **FUEL-012** | Fuel Price Volatility | % | Weekly (std. dev. of weekly % changes, 12 weeks) | Validated |
 
-```text
-Premium Gasoline
-Regular Gasoline
-Premium Diesel
-Regular Diesel
-LPG
-Natural Gas
-Other Fuel Types
-```
+Source decisions (from profiling):
 
-Actual values will be determined from the validated source.
+- **XLSX is the authoritative format.** Every CSV value equals the XLSX value rounded to whole pesos (0 differences above 0.5 on 19,184 comparable values), so the CSV loses the centavos. Both files are kept in Bronze; the CSV is used only as a reconciliation check.
+- **Zero means not published.** A price of 0 (e.g. Gasoil Óptimo before November 2012) is stored as NULL with `is_published = false` and excluded from KPIs.
+- **Repeated weeks:** four weeks (9 December 2023 to 5 January 2024) are published twice with some different values. The later block in the file is kept; the earlier copies go to `quality.dq_rejected_records`.
+- Price weeks are built from `DIA DESDE` / `DIA HASTA` and the month label, which is sometimes the start and sometimes the end month and has typos; source gaps (3) and overlaps (3) are reported, not altered.
+- Windows without enough history return NULL with an `is_full_window_*` flag (FX decision D4).
+
+Fuel dimension values in the validated source (22 series, DOP per gallon): Gasolina Premium, Gasolina Regular, Gasoil Óptimo, Gasoil Regular, Gasoil Premium (until 2015), GLP, Kerosene, Avtur, Fuel Oil, Fuel Oil 1% azufre, and the electricity-generation (EGP-C / EGP-T, interconnected and not interconnected) variants of gasoil and fuel oil.
 
 ---
 
@@ -952,18 +950,26 @@ gold.economic_relationship_metrics
 
 # 13. Consumer & Basic Basket KPIs
 
-| KPI ID | KPI Name | Unit |
-|---|---|---|
-| **CON-001** | Average Product Price | DOP / unit |
-| **CON-002** | Median Product Price | DOP / unit |
-| **CON-003** | Minimum Product Price | DOP / unit |
-| **CON-004** | Maximum Product Price | DOP / unit |
-| **CON-005** | Product MoM % | % |
-| **CON-006** | Product YoY % | % |
-| **CON-007** | Product YTD % | % |
-| **CON-008** | Product Price Volatility | % |
-| **CON-009** | Regional Price Difference % | % |
-| **CON-010** | Category Price Index | Index |
+**Validation status:** Partially validated (2026-10-23) against the Pro Consumidor file "Precios Productos de Primera Necesidad, por segmento de comercialización", July–September 2026 (200 products, 5 retail segments: almacenes, colmados, mercados, supermercados grandes, supermercados pequeños). Stored in `gold.consumer_price_metrics` (grain: month × product × presentation, 468 rows).
+
+| KPI ID | KPI Name | Unit | Status |
+|---|---|---|---|
+| **CON-001** | Average Product Price | DOP / unit | Validated |
+| **CON-002** | Median Product Price | DOP / unit | Validated |
+| **CON-003** | Minimum Product Price | DOP / unit | Validated (with cheapest segment) |
+| **CON-004** | Maximum Product Price | DOP / unit | Validated (with most expensive segment) |
+| **CON-005** | Product MoM % | % | Validated, like-for-like: average of the per-segment change for segments priced in both consecutive months (192 of 468 rows) |
+| **CON-006** | Product YoY % | % | Not calculable: the source covers 3 months |
+| **CON-007** | Product YTD % | % | Not calculable: the source covers 3 months |
+| **CON-008** | Product Price Volatility | % | Not calculable: too few observations per product |
+| **CON-009** | Regional Price Difference % | % | Not calculable: the source has no geography. `price_spread_pct` (max vs min across retail segments) is provided instead and is not a regional measure |
+| **CON-010** | Category Price Index | Index | Proposed: needs a category mapping and weighting methodology |
+
+Source decisions (from profiling):
+
+- **XLSX is used**; the CSV has inconsistent delimiters.
+- The file title states the report period. **30 rows whose year is outside that period** (2027, 2035, 2041 and others, clear capture errors) are rejected to `quality.dq_rejected_records`, not corrected.
+- Prices are compared only within the same product **and** presentation. Because the segments priced change from month to month, the month-over-month change is never computed on the cross-segment average (that would mix price changes with sample changes).
 
 Potential analytical dimensions:
 
