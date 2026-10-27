@@ -8,8 +8,15 @@ Download notebooks find the current file of a source, download it, validate it a
   same name), the new version is kept as ``<name>__<yyyy-mm-dd>.<ext>``. Nothing is ever overwritten or deleted.
 
 Bronze picks the new files up with Auto Loader (see ``ingestion.py``).
+
+Source availability: a source that cannot be reached after three attempts (connection or timeout error, invalid TLS
+certificate, HTTP 5xx) raises ``SourceUnavailable``. Download notebooks catch it with ``source_unavailable``: the outage
+is logged in ``quality.source_availability``, the task ends as a warning (``SOURCE_UNAVAILABLE``) and the source keeps its
+last data. TLS verification is never disabled. An HTTP 4xx (file moved or access changed), a layout change or a failed
+validation is still an error, because it needs a fix in the project.
 """
-import hashlib, json, os, urllib.parse, urllib.request
+import hashlib, json, os, time, urllib.error, urllib.parse, urllib.request
+from datetime import timezone
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -17,11 +24,43 @@ USER_AGENT = "rd-economic-intelligence/1.0 (portfolio data pipeline)"
 CKAN_API = "https://datos.gob.do/api/3/action/package_show?id="
 
 
-def http_get(url, timeout=180):
-    """GET a URL (spaces and accents in file names are percent-encoded) and return the bytes."""
+class SourceUnavailable(Exception):
+    """The source could not be reached (network, TLS certificate or server error). Not a project defect."""
+
+
+def http_get(url, timeout=180, attempts=3):
+    """GET a URL (spaces and accents in file names are percent-encoded) and return the bytes.
+
+    Retries transient failures; raises SourceUnavailable when the source stays unreachable, and lets HTTP 4xx through."""
     safe_url = urllib.parse.quote(url, safe=":/?=&%#")
-    with urllib.request.urlopen(urllib.request.Request(safe_url, headers={"User-Agent": USER_AGENT}), timeout=timeout) as r:
-        return r.read()
+    last = None
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(safe_url, headers={"User-Agent": USER_AGENT}), timeout=timeout) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code < 500:
+                raise
+            last = e
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
+            last = e
+        if attempt < attempts:
+            time.sleep(10 * attempt)
+    raise SourceUnavailable(f"{url} unreachable after {attempts} attempts: {last!r}")
+
+
+def source_unavailable(dbutils, spark, source, error):
+    """Log the outage, mark the task as 'nothing downloaded' and end it as a warning (the source keeps its last data)."""
+    detail = str(error)[:1000]
+    print(f"WARNING · source unavailable · {source}: {detail}")
+    try:
+        spark.createDataFrame([(source, "UNAVAILABLE", detail, datetime.now(timezone.utc))],
+                              "source string, status string, detail string, checked_ts timestamp") \
+             .write.mode("append").saveAsTable("rd_economic_intelligence.quality.source_availability")
+    except Exception as e:  # logging must never turn the warning into a failure
+        print(f"Could not log the outage: {e!r}")
+    dbutils.jobs.taskValues.set(key="downloaded", value=False)
+    dbutils.notebook.exit(json.dumps({"status": "SOURCE_UNAVAILABLE", "source": source, "reason": detail}, ensure_ascii=False))
 
 
 def ckan_resources(package_id, formats):
