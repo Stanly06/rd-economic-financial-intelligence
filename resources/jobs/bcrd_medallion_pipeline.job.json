@@ -26,7 +26,7 @@
       "task_key": "download_bcrd_cpi",
       "description": "Download the six BCRD CPI and family-basket workbooks (.xlsx and legacy .xls) into the append-only bcrd_raw archive (skips content already archived)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -37,7 +37,7 @@
       "task_key": "download_bcrd_exchange_rates",
       "description": "Download the BCRD daily USD/DOP reference-rate workbook (since 1991) into the append-only bcrd_raw archive (skips content already archived)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -48,7 +48,7 @@
       "task_key": "download_proconsumidor_prices",
       "description": "Download the current Pro Consumidor basic-goods price report from datos.gob.do into the append-only proconsumidor_raw archive (skips content already archived)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/05_ProConsumidor_Prices_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/05_ProConsumidor_Prices_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -59,7 +59,7 @@
       "task_key": "download_micm_fuel_prices",
       "description": "Download the current MICM fuel-price XLSX and CSV from datos.gob.do into the append-only micm_raw archive (skips content already archived)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/04_MICM_Fuel_Prices_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/04_MICM_Fuel_Prices_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -70,7 +70,7 @@
       "task_key": "bronze_bcrd_exchange_rates",
       "description": "Auto Loader: register new BCRD USD/DOP workbooks and capture each as a snapshot in bronze.bcrd_exchange_rates_daily",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/01_BCRD_Exchange_Rates_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -91,7 +91,7 @@
         }
       ],
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/01_BCRD_Exchange_Rates_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/01_BCRD_Exchange_Rates_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -107,7 +107,7 @@
         }
       ],
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/01_BCRD_Exchange_Rates_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/01_BCRD_Exchange_Rates_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -118,7 +118,7 @@
       "task_key": "bronze_bcrd_cpi",
       "description": "Auto Loader: register new BCRD CPI and family-basket workbooks and capture each row by row as a snapshot in bronze.bcrd_cpi_raw_rows",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/02_BCRD_CPI_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -134,7 +134,7 @@
       "task_key": "silver_bcrd_cpi",
       "description": "Parse into 5 tidy monthly Silver tables with enforced DQ rules",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/02_BCRD_CPI_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/02_BCRD_CPI_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -150,7 +150,7 @@
       "task_key": "gold_inflation_kpis",
       "description": "Calculate INF-001..006 into gold.inflation_metrics, reconciled with BCRD published values",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/02_BCRD_CPI_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/02_BCRD_CPI_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -171,7 +171,7 @@
         }
       ],
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/03_BCRD_Cost_of_Living_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/03_BCRD_Cost_of_Living_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -182,7 +182,7 @@
       "task_key": "bronze_micm_fuel_prices",
       "description": "Auto Loader: register new MICM fuel-price files (XLSX authoritative, CSV for reconciliation) and capture each as a snapshot in bronze.micm_fuel_prices_raw",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/04_MICM_Fuel_Prices_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/04_MICM_Fuel_Prices_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -198,7 +198,7 @@
       "task_key": "silver_micm_fuel_prices",
       "description": "Resolve price weeks, unpivot 22 fuels and validate into silver.micm_fuel_prices_weekly",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/04_MICM_Fuel_Prices_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/04_MICM_Fuel_Prices_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -214,7 +214,7 @@
       "task_key": "gold_fuel_price_kpis",
       "description": "Calculate FUEL-001..012 into gold.fuel_price_metrics",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/04_MICM_Fuel_Prices_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/04_MICM_Fuel_Prices_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -230,7 +230,7 @@
       "task_key": "bronze_proconsumidor_prices",
       "description": "Auto Loader: register new Pro Consumidor price workbooks and capture each one as a snapshot in bronze.proconsumidor_prices_raw",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/05_ProConsumidor_Prices_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/05_ProConsumidor_Prices_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -246,7 +246,7 @@
       "task_key": "silver_proconsumidor_prices",
       "description": "Validate (reject years outside the report period) into silver.proconsumidor_prices_monthly",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/05_ProConsumidor_Prices_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/05_ProConsumidor_Prices_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -262,7 +262,7 @@
       "task_key": "gold_consumer_price_kpis",
       "description": "Calculate CON-001..005 into gold.consumer_price_metrics",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/05_ProConsumidor_Prices_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/05_ProConsumidor_Prices_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -278,7 +278,7 @@
       "task_key": "download_mem_annex",
       "description": "Download the newest MEM Informe de Desempeño annex into the append-only mem_raw archive (skips content already archived)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -289,7 +289,7 @@
       "task_key": "bronze_mem_electricity",
       "description": "Auto Loader: register new MEM annex files and capture their EDE indicator and tariff sheets into bronze.mem_electricity_raw_rows (one snapshot per file)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -305,7 +305,7 @@
       "task_key": "silver_mem_electricity",
       "description": "Parse into silver.mem_ede_monthly and silver.mem_tariffs_quarterly",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/06_MEM_Electricity_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/06_MEM_Electricity_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -321,7 +321,7 @@
       "task_key": "gold_electricity_kpis",
       "description": "Calculate ENE-001..009 into gold.electricity_metrics, electricity_tariff_monthly and electricity_bts1_bill",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/06_MEM_Electricity_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/06_MEM_Electricity_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -337,7 +337,7 @@
       "task_key": "download_ma_agri_prices",
       "description": "Download the Ministry of Agriculture retail and wholesale price reports (Excel and CSV) from datos.gob.do into the append-only agriculture_raw archive",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/07_MA_Agricultural_Prices_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/07_MA_Agricultural_Prices_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -348,7 +348,7 @@
       "task_key": "bronze_ma_agri_prices",
       "description": "Auto Loader: register new agriculture price files and capture each as a snapshot in bronze.ma_agri_prices_raw",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/07_MA_Agricultural_Prices_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/07_MA_Agricultural_Prices_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -364,7 +364,7 @@
       "task_key": "silver_ma_agri_prices",
       "description": "Unpivot markets, map typos with controlled dictionaries and build silver.ma_agri_prices_weekly",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/07_MA_Agricultural_Prices_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/07_MA_Agricultural_Prices_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -380,7 +380,7 @@
       "task_key": "gold_agri_price_kpis",
       "description": "Calculate AGR-001..005 and AGR-007 into gold.agri_price_monthly and gold.agri_rubro_monthly",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/07_MA_Agricultural_Prices_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/07_MA_Agricultural_Prices_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -396,7 +396,7 @@
       "task_key": "export_web_platform_data",
       "description": "Export validated Gold KPIs to gold.web_exports/rd_platform_data.json for the web platform. Runs when all chains finish (ALL_DONE): Gold tables are only rewritten when their checks pass, so the export always contains validated data, and one failing source does not block the others.",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/exports/08_Web_Platform_Export",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/exports/08_Web_Platform_Export",
         "source": "WORKSPACE"
       },
       "max_retries": 1,

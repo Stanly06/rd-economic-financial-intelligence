@@ -26,7 +26,7 @@
       "task_key": "download_mem_annex",
       "description": "Download the newest MEM Informe de Desempeño annex into the append-only mem_raw archive (skips content already archived)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Download",
         "source": "WORKSPACE"
       },
       "max_retries": 2,
@@ -51,7 +51,7 @@
       "task_key": "bronze_mem_electricity",
       "description": "Auto Loader: register new annex files and capture their sheets into bronze.mem_electricity_raw_rows (one snapshot per file)",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Bronze",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/bronze/06_MEM_Electricity_Bronze",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -68,7 +68,7 @@
       "task_key": "silver_mem_electricity",
       "description": "Parse into silver.mem_ede_monthly and silver.mem_tariffs_quarterly",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/silver/06_MEM_Electricity_Silver",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/silver/06_MEM_Electricity_Silver",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
@@ -84,7 +84,7 @@
       "task_key": "gold_electricity_kpis",
       "description": "Calculate ENE-001..009 into the electricity Gold tables",
       "notebook_task": {
-        "notebook_path": "/Users/sffernandez06@gmail.com/rd-economic-financial-intelligence/src/gold/06_MEM_Electricity_Gold",
+        "notebook_path": "/rd-economic-financial-intelligence/rd-economic-financial-intelligence/src/gold/06_MEM_Electricity_Gold",
         "source": "WORKSPACE"
       },
       "max_retries": 1,
