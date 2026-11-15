@@ -95,17 +95,18 @@ The platform only includes Dominican data. International data is allowed only as
 **Power BI**
 - [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for seven pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices and Electricity.
 
-## Target architecture
+## Architecture
 
-```mermaid
-flowchart LR
-    S[Official sources<br/>BCRD · MICM · Pro Consumidor · Agriculture] --> V[Raw landing<br/>UC Volumes]
-    V --> B[(Bronze<br/>source-preserving Delta)]
-    B --> SI[(Silver<br/>typed · validated · deduplicated)]
-    SI --> G[(Gold<br/>KPI and analytical tables)]
-    G --> DS[Databricks SQL / Dashboard]
-    G --> PBI[Power BI]
-```
+![RD Economic & Financial Intelligence Platform architecture](docs/architecture/architecture_en.png)
+
+*Versión en español: [architecture_es.png](docs/architecture/architecture_es.png). Editable sources: [English](docs/architecture/architecture_en.drawio) and [Spanish](docs/architecture/architecture_es.drawio) (open them in [diagrams.net](https://app.diagrams.net)).*
+
+1. **Official sources.** Five Dominican institutions publish the data: the Central Bank (daily exchange rate, monthly CPI and family basket), MICM (weekly fuel prices), Pro Consumidor (basic goods prices), the Ministry of Energy and Mines (monthly distributor report) and the Ministry of Agriculture (weekly wholesale and retail prices). Most files come through the datos.gob.do CKAN API; the rest from each institution's official URL.
+2. **Automated ingestion.** One download notebook per source finds the current file, downloads it with three retries, checks its structure before saving anything and skips content already archived (SHA-256). New files are written unchanged to a Unity Catalog Volume by year and month; nothing is ever overwritten or deleted. A source that is down ends as a warning and keeps its last data, while a layout change fails the task.
+3. **Databricks Lakehouse.** Auto Loader picks up only new files. Bronze keeps the raw rows with file, hash and batch lineage; Silver types and validates them and sends failures to an audited rejects table; Gold holds the business KPIs in seven families (FX, INF, COL, FUEL, CON, ENE, AGR). Every load reconciles Bronze = Silver + rejected + superseded. Code is written in PySpark and SQL, versioned in GitHub and run from a Databricks Git folder.
+4. **Publishing and consumption.** The last task exports the Gold KPIs to JSON. A GitHub Actions workflow downloads it, validates it and publishes the bilingual web platform (ES/EN) on GitHub Pages. The same Gold tables feed the Power BI dashboard (Import mode).
+
+**Orchestration.** One Lakeflow Job runs 26 tasks in six parallel chains every Monday at 7:07 a.m. (America/Santo_Domingo), with retries and an email alert on failure.
 
 ## Roadmap
 
