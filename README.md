@@ -6,6 +6,8 @@ An end-to-end **Data Engineering + Business Intelligence** project that centrali
 
 > **Live web platform (ES/EN): https://stanly06.github.io/rd-intelligence/** — built from the Gold tables by [`web/`](web/README.md).
 
+> **Video walkthrough (Spanish, 28 min): https://youtu.be/-aDD3cYoCOU**: the whole platform explained stage by stage, from the official sources to the web and Power BI.
+
 > **Status (November 2026): in operation.** All six official sources (BCRD exchange rate, BCRD CPI and family basket, MICM fuel, Pro Consumidor, MEM electricity and Ministry of Agriculture) run end to end with automatic download and incremental ingestion, orchestrated by one weekly Lakeflow Job. The Gold KPIs (FX, INF, COL, FUEL, CON, ENE and AGR) are reconciled with the values each institution publishes and feed the live web platform and a 7-page Power BI report. Next: the formal data dictionary, source-to-target mapping and data-quality documentation. **Video walkthrough (Spanish, 28 min): https://youtu.be/-aDD3cYoCOU**
 
 ---
@@ -96,6 +98,10 @@ The platform only includes Dominican data. International data is allowed only as
 - [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for seven pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices and Electricity.
 
 ## Architecture
+
+[![Watch the full project walkthrough on YouTube](docs/video/walkthrough_thumbnail.jpg)](https://youtu.be/-aDD3cYoCOU)
+
+**Video walkthrough (Spanish, 28 min):** [watch on YouTube](https://youtu.be/-aDD3cYoCOU). Chapters: [platform](https://youtu.be/-aDD3cYoCOU) · [architecture](https://youtu.be/-aDD3cYoCOU?t=45) · [official sources](https://youtu.be/-aDD3cYoCOU?t=292) · [ingestion](https://youtu.be/-aDD3cYoCOU?t=591) · [Databricks lakehouse](https://youtu.be/-aDD3cYoCOU?t=870) · [web and Power BI](https://youtu.be/-aDD3cYoCOU?t=1099) · [orchestration and failures](https://youtu.be/-aDD3cYoCOU?t=1367) · [lessons learned](https://youtu.be/-aDD3cYoCOU?t=1593)
 
 ![RD Economic & Financial Intelligence Platform architecture](docs/architecture/architecture_en.png)
 
