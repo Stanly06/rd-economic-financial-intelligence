@@ -1,12 +1,12 @@
 # RD Economic & Financial Intelligence Platform
 
-An end-to-end **Data Engineering + Business Intelligence** project that will centralize economic, price and cost-of-living indicators for the **Dominican Republic** in a **Databricks Lakehouse** (Medallion Architecture), with analytics in **Databricks SQL** and **Power BI**.
+An end-to-end **Data Engineering + Business Intelligence** project that centralizes economic, price and cost-of-living indicators for the **Dominican Republic** in a **Databricks Lakehouse** (Medallion Architecture), with analytics in **Databricks SQL** and **Power BI**.
 
 **Stack:** Databricks (Free Edition) · Unity Catalog · Delta Lake · PySpark · SQL · Power BI
 
 > **Live web platform (ES/EN): https://stanly06.github.io/rd-intelligence/** — built from the Gold tables by [`web/`](web/README.md).
 
-> **Status: in progress. All six sources (BCRD FX, BCRD CPI, MICM, Pro Consumidor, MEM electricity and Ministry of Agriculture) run end to end in development, with automatic download and incremental ingestion.** Business discovery and source assessment are complete. The Unity Catalog foundation is implemented. BCRD exchange rates, CPI and family basket, MICM weekly fuel prices and Pro Consumidor basic-goods prices are ingested, validated and modeled into Gold KPIs (FX, INF, COL, FUEL and CON), and electricity (ENE) comes from the MEM monthly distributor report annex, agricultural market prices (AGR) come from the Ministry of Agriculture weekly reports, all orchestrated by one Lakeflow Job.
+> **Status (November 2026): in operation.** All six official sources (BCRD exchange rate, BCRD CPI and family basket, MICM fuel, Pro Consumidor, MEM electricity and Ministry of Agriculture) run end to end with automatic download and incremental ingestion, orchestrated by one weekly Lakeflow Job. The Gold KPIs (FX, INF, COL, FUEL, CON, ENE and AGR) are reconciled with the values each institution publishes and feed the live web platform and a 7-page Power BI report. Next: the formal data dictionary, source-to-target mapping and data-quality documentation. **Video walkthrough (Spanish, 28 min): https://youtu.be/-aDD3cYoCOU**
 
 ---
 
@@ -114,11 +114,13 @@ The platform only includes Dominican data. International data is allowed only as
 |---|---|
 | Business discovery (BRD, charter, KPIs) | Complete |
 | Data source assessment | Complete |
-| Data discovery & profiling | In progress |
-| Data dictionary & source-to-target mapping | Planned |
-| Data model & data-quality contracts | Planned |
-| Bronze / Silver / Gold pipelines + Jobs | Complete in development for all six sources (automatic download + Auto Loader + one Lakeflow Job) |
-| Databricks SQL, dashboard and Power BI | In progress (Power BI report: 7 pages on FX, inflation, cost of living, fuel, consumer prices and electricity) |
+| Data discovery & profiling | Complete for the six sources |
+| Bronze / Silver / Gold pipelines + Jobs | Complete: automatic download, Auto Loader, one weekly Lakeflow Job (26 tasks) |
+| Web platform (ES/EN) and Power BI report | Complete: live on GitHub Pages, refreshed weekly by GitHub Actions; Power BI report with 7 pages |
+| Solution architecture | In progress: diagram (EN/ES) and storage & governance ADR published |
+| Data dictionary, source-to-target mapping, data model, data-quality contracts | Planned (rules already enforced in the pipelines) |
+| Databricks SQL analytics and dashboard | Planned |
+| Project video | Complete: [full walkthrough on YouTube](https://youtu.be/-aDD3cYoCOU) |
 
 **Principle:** business first, data second, architecture third, implementation fourth. Pipelines are designed around validated data, not assumptions.
 

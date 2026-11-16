@@ -14,6 +14,29 @@ The documentation follows the complete project lifecycle, from business discover
 | 02 | [Project Charter](02_Project_Charter.md) | Complete |
 | 03 | [Business Questions & KPI Catalog](03_Business_Questions_KPI_Catalog.md) | Complete |
 | 04 | [Data Source Assessment](04_Data_Source_Assessment.md) | Complete |
+| 05 | Data Dictionary | Planned — table and column descriptions already stored in Unity Catalog for the Silver and Gold tables |
+| 06 | Source-to-Target Mapping | Planned — the mappings are implemented and commented in each Silver notebook |
+| 07 | Solution Architecture | In progress — [architecture diagram (EN/ES)](architecture/) and [Storage & Governance ADR](architecture/01_Storage_and_Governance_ADR.md) published |
+| 08 | Logical & Physical Data Model | Planned |
+| 09 | Data Quality Rules & Data Contracts | In progress — rules enforced in every Silver load (`quality.dq_rule_results`, `quality.dq_rejected_records`, Delta constraints); formal document pending |
+| 10 | [Databricks Environment Setup](../src/setup/) | Complete — Unity Catalog, schemas, volumes and landing folders validated |
+| 11 | [Bronze Layer](../src/bronze/) | Complete — 6 sources with automatic download and Auto Loader incremental ingestion |
+| 12 | [Silver Layer](../src/silver/) | Complete — 6 sources typed, validated and reconciled (Bronze = Silver + rejected + superseded) |
+| 13 | [Gold Layer](../src/gold/) | Complete — FX, INF, COL, FUEL, CON, ENE and AGR KPI families |
+| 14 | [Databricks Workflows](../resources/jobs/) | Complete — `rd_economic_medallion_pipeline` (26 tasks, 6 parallel chains, every Monday 07:07) and `rd_mem_electricity_weekly` (conditional) |
+| 15 | Monitoring & Data Quality | In progress — rule results logged per run, `quality.source_availability` for publisher outages, e-mail alerts on failure |
+| 16 | Databricks SQL Analytics | Planned |
+| 17 | Databricks Dashboard | Planned |
+| 18 | [Power BI Dashboard](../powerbi/) | Complete — 7 pages: FX, Inflation, FX vs Inflation, Cost of Living, Fuel, Consumer Prices, Electricity |
+| 19 | Testing & Validation | In progress — every Gold KPI family reconciled with values published by the source institution |
+| 20 | Business Insights | In progress — data findings documented per source in this file |
+| 21 | Portfolio Publication | Complete — [live web platform (ES/EN)](https://stanly06.github.io/rd-intelligence/), [portfolio](https://stanly06.github.io/) and [full video walkthrough](https://youtu.be/-aDD3cYoCOU) |
+
+---|---|---|
+| 01 | [Business Requirements Document](01_Business_Requirements_Document.md) | Complete |
+| 02 | [Project Charter](02_Project_Charter.md) | Complete |
+| 03 | [Business Questions & KPI Catalog](03_Business_Questions_KPI_Catalog.md) | Complete |
+| 04 | [Data Source Assessment](04_Data_Source_Assessment.md) | Complete |
 | 05 | Data Dictionary | Planned |
 | 06 | Source-to-Target Mapping | Planned |
 | 07 | Solution Architecture | Planned |
@@ -36,25 +59,30 @@ The documentation follows the complete project lifecycle, from business discover
 
 # Current Project Phase
 
-## Phase 2 — Data Discovery & Profiling
+## Operation, Documentation & Publication
 
-Business Discovery and the initial Data Source Assessment are complete. The project is validating real source files against the approved business questions and KPI catalog before committing to physical data models or Databricks pipelines.
+All six official sources run end to end (automatic download → Bronze → Silver → Gold) in one weekly Lakeflow Job, and the Gold layer feeds the bilingual web platform and the Power BI report. The project is now in operation: the weekly job keeps the data current, and the remaining work is the formal data documentation.
 
-**Current activity:** source-level profiling, source-format reconciliation, data-quality assessment, and documentation of unresolved issues.
+**Last update:** November 2026
 
-## Current Data Discovery & Profiling Progress
+**Next milestones:**
+
+- Write `05_Data_Dictionary`, `06_Source-to-Target_Mapping`, `08_Logical_Physical_Data_Model` and `09_Data_Quality_Rules` from the implemented notebooks and Unity Catalog metadata.
+- Obtain more Pro Consumidor history (only July–September 2026 is published), needed for YoY, YTD and volatility KPIs.
+- Define the methodology for AGR-006 (seasonal index).
+- Build the Databricks SQL analytics and dashboard (16–17).
+
+## Data Discovery & Profiling Results
 
 | Dataset / Source | Status | Evidence and next validation |
 |---|---|---|
-| BCRD — USD/DOP Exchange Rates | Initial profiling completed | Historical Excel reviewed; official incremental extraction remains unconfirmed |
-| BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Validated; Bronze, Silver and Gold implemented | Six workbooks parsed into five monthly Silver tables with 0 rejects; calculated inflation reconciles with BCRD published values |
+| BCRD — USD/DOP Exchange Rates | Validated; pipelines implemented | Daily series since 1991 downloaded automatically; YTD change reconciles with BCRD on 2,506 of 2,506 comparable days |
+| BCRD — CPI, CPI Groups, Core CPI, CPI Regions, Family Basket by Quintile and Region | Validated; pipelines implemented | Six workbooks parsed into five monthly Silver tables with 0 rejects; calculated inflation reconciles with BCRD published values |
 | MICM — Fuel Prices | Validated; pipelines implemented | XLSX authoritative (CSV = XLSX rounded to whole pesos, 0 differences on 19,184 values); zero = not published; four December 2023 weeks published twice resolved to the later block |
 | Pro Consumidor — Consumer Prices | Validated for Jul–Sep 2026; pipelines implemented | XLSX used (CSV malformed); 30 rows with years outside the report period rejected; only 3 months and no geography, so YoY, YTD, volatility and regional KPIs are not calculable yet |
-| Ministry of Agriculture — Agricultural Prices | Implemented: download, Bronze, Silver, Gold (AGR-001..005, AGR-007) | Wholesale and retail files (Aug 2017 – Sep 2026) profiled and reconciled; quality validation and KPI feasibility (AGR-001 to AGR-007) remain open |
+| MEM — Electricity (distributor annex) | Validated; pipelines implemented | Average selling price reconciles with the MEM monthly report (May 2026) |
+| Ministry of Agriculture — Agricultural Prices | Validated; pipelines implemented (AGR-001..005, AGR-007) | Wholesale and retail files (Aug 2017 – Sep 2026); Excel vs CSV: 0 differences on 367,475 cells; AGR-006 pending a methodology |
 | EIA — WTI / Brent | Not started | External driver only under RD-First governance |
-
-**Current phase:** Data Discovery & Profiling  
-**Next milestone:** Build the Ministry of Agriculture pipelines, build the electricity series from the MEM monthly reports (sources assessed below), obtain more Pro Consumidor history, and prepare evidence-based inputs for `05_Data_Dictionary` and `06_Source-to-Target_Mapping`.
 
 **Technical documentation:**
 - [MICM Fuel Prices — Data Discovery & Profiling](../profiling/micm/README.md)
@@ -237,7 +265,7 @@ Lakeflow Job `rd_economic_medallion_pipeline` ([definition](../resources/jobs/bc
 
 Lakeflow Job `rd_mem_electricity_weekly` ([definition](../resources/jobs/mem_electricity_weekly.job.json)) is **active**: every Monday at 07:23 (America/Santo_Domingo) it checks the MEM website for a new annex; a condition task (`{{tasks.download_mem_annex.values.downloaded}} == true`) runs Bronze, Silver and Gold only when a new file landed, so quiet weeks cost one short task.
 
-The progress table tracks operational source discovery. It does **not** change the completion status of documents 05–21 in the formal roadmap.
+
 
 ---
 
