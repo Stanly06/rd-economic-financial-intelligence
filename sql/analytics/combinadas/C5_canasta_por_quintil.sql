@@ -1,4 +1,4 @@
--- P5. ¿Cuánto cuesta la canasta familiar por quintil de ingreso y cuánto subió en un año?
+-- C5. ¿Cuánto cuesta la canasta familiar por quintil de ingreso y cuánto subió en un año?
 WITH quintiles AS (                            -- Paso 1: costo mensual de la canasta por quintil
     SELECT segment AS quintil, reference_month, basket_cost_dop
     FROM rd_economic_intelligence.gold.cost_of_living_metrics

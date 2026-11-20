@@ -1,4 +1,4 @@
--- P1. ¿Cómo se movió el dólar cada mes de 2026 y cuál fue el mes de mayor depreciación del peso?
+-- C1. ¿Cómo se movió el dólar cada mes de 2026 y cuál fue el mes de mayor depreciación del peso?
 WITH tasa_diaria AS (                       -- Paso 1: tasa de venta diaria del dólar
     SELECT rate_date, rate
     FROM rd_economic_intelligence.gold.exchange_rate_metrics

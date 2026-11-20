@@ -1,4 +1,4 @@
--- P3. ¿Qué grupos de gasto tuvieron la inflación interanual más alta cada año? (Top 3 por año)
+-- C3. ¿Qué grupos de gasto tuvieron la inflación interanual más alta cada año? (Top 3 por año)
 WITH grupos AS (                              -- Paso 1: índice mensual de cada grupo de gasto
     SELECT series_name AS grupo, reference_month, index_value
     FROM rd_economic_intelligence.gold.inflation_metrics

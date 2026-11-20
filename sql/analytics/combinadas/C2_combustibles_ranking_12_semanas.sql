@@ -1,4 +1,4 @@
--- P2. ¿Qué combustibles subieron más en las últimas 12 semanas y cuántas semanas subieron? (RANK vs DENSE_RANK vs ROW_NUMBER)
+-- C2. ¿Qué combustibles subieron más en las últimas 12 semanas y cuántas semanas subieron? (RANK vs DENSE_RANK vs ROW_NUMBER)
 WITH principales AS (                        -- Paso 1: los combustibles que usa la gente
     SELECT fuel_name, period_start_date, price_dop
     FROM rd_economic_intelligence.gold.fuel_price_metrics

@@ -1,4 +1,4 @@
--- P4. ¿La inflación y el dólar se mueven juntos? Comparación interanual de los últimos 24 meses
+-- C4. ¿La inflación y el dólar se mueven juntos? Comparación interanual de los últimos 24 meses
 WITH ipc AS (                                  -- Paso 1: inflación interanual nacional (calculada con LAG)
     SELECT reference_month AS mes,
            ROUND((index_value / LAG(index_value, 12) OVER (ORDER BY reference_month) - 1) * 100, 2) AS inflacion_yoy_pct

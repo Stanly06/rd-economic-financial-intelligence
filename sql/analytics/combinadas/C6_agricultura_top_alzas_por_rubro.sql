@@ -1,4 +1,4 @@
--- P6. ¿Qué productos agrícolas subieron más en el último año dentro de cada rubro? (Top 3, mercado minorista)
+-- C6. ¿Qué productos agrícolas subieron más en el último año dentro de cada rubro? (Top 3, mercado minorista)
 WITH ultimo_mes AS (                           -- Paso 1: el mes más reciente con datos
     SELECT MAX(reference_month) AS mes
     FROM rd_economic_intelligence.gold.agri_price_monthly

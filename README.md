@@ -98,7 +98,7 @@ The platform only includes Dominican data. International data is allowed only as
 - [Connection, model and report design](powerbi/README.md) and [DAX measures](powerbi/measures.dax) for seven pages: Foreign Exchange, Inflation, FX vs Inflation, Cost of Living, Fuel Prices, Consumer Prices and Electricity.
 
 **SQL analytics**
-- [Six business questions in SQL](sql/analytics/README.md) (Spanish) answered on the Gold tables with CTEs and window functions (`LAG`, `RANK`, `DENSE_RANK`, `ROW_NUMBER`, moving windows), run step by step with results in the notebook [`09_SQL_Analytics`](src/analytics/09_SQL_Analytics.ipynb).
+- [Seventeen business questions in SQL](sql/analytics/README.md) (Spanish) answered on the Gold tables, from one function at a time to combined queries, with CTEs and window functions (`LAG`, `RANK`, `DENSE_RANK`, `ROW_NUMBER`, moving windows), run step by step with results in the notebook [`09_SQL_Analytics`](src/analytics/09_SQL_Analytics.ipynb).
 
 ## Architecture
 
