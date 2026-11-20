@@ -2,7 +2,7 @@
 
 Seis preguntas de negocio respondidas con **SQL en Databricks** sobre las tablas Gold del catálogo `rd_economic_intelligence`. Cada consulta usa **CTE** (`WITH … AS`) y **funciones de ventana** (`OVER`, `LAG`, `RANK`, `DENSE_RANK`, `ROW_NUMBER`, `ROWS BETWEEN`).
 
-- **Notebook con explicación paso a paso y resultados:** [`src/analytics/09_SQL_Analytics.ipynb`](../../src/analytics/09_SQL_Analytics.ipynb). En Databricks, conéctalo al SQL Warehouse y ejecuta las celdas: cada consulta muestra su tabla de resultados debajo.
+- **Notebook con explicación paso a paso y resultados:** [`src/analytics/09_SQL_Analytics.ipynb`](../../src/analytics/09_SQL_Analytics.ipynb). En Databricks, conéctalo a Serverless y presiona Run all: cada consulta muestra su tabla de resultados debajo.
 - **Consultas sueltas:** los archivos `.sql` de esta carpeta. Se pueden abrir en el editor SQL de Databricks.
 
 | # | Archivo | Pregunta de negocio | Funciones |
