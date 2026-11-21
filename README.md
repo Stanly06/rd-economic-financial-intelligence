@@ -100,6 +100,8 @@ The platform only includes Dominican data. International data is allowed only as
 **SQL analytics**
 - [Seventeen business questions in SQL](sql/analytics/README.md) (Spanish) answered on the Gold tables, from one function at a time to combined queries, with CTEs and window functions (`LAG`, `RANK`, `DENSE_RANK`, `ROW_NUMBER`, moving windows), run step by step with results in the notebook [`09_SQL_Analytics`](src/analytics/09_SQL_Analytics.ipynb).
 - [Same questions in Python](src/analytics/10_Python_Analytics.ipynb): eight of them solved side by side in pandas and PySpark (`shift`, `rank`, `cumsum`, `rolling`, `qcut` vs `F.lag`, `F.rank`, `F.ntile`), with a guide on when to use SQL, pandas or PySpark.
+- [pandas practice exercises](src/analytics/11_Pandas_Interview_Exercises.ipynb): ten short exercises on the Gold tables (nulls, duplicates, `merge`, `pivot_table`, dates, `apply`, `groupby().transform()`), each with an attempt cell and a worked solution.
+- [Basic machine learning](src/analytics/12_ML_Basics_Inflation.ipynb): a scikit-learn linear regression of year-on-year inflation on the dollar and fuel prices, with a time-ordered train/test split, MAE / RMSE / R², and a comparison against naive baselines.
 
 ## Architecture
 
