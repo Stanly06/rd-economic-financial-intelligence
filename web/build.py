@@ -33,8 +33,13 @@ moms = [(s[5][am] / s[5][am - 1] - 1) * 100 for s in A["s"] if s[0] == 0 and s[1
 rub_yoy = [[r["r"], r["yoy"][-1]] for r in A["rub"] if r["c"] == "retail" and r["m"][-1] == A["m"][am] and r["yoy"][-1] is not None]
 agri_sum = {"m": A["m"][am], "mom": round(sum(moms) / len(moms), 4), "up": sum(1 for v in moms if v > 0), "n": len(moms), "rubYoy": rub_yoy}
 
+# Latest period of each indicator (the web page shows it next to the source and compares it with the refresh date)
+hl = next(x for x in d["cpi"] if x["t"] == "headline")
+fresh = {"fx": fx["d"][-1], "cpi": hl["m"][-1], "col": next(x for x in d["col"] if x["t"] == "national")["m"][-1], "fuel": d["fuel"]["w"][-1],
+         "con": max(r[0] for r in d["con"]), "elec": d["elec"]["m"][-1], "agri": A["m"][-1]}
+
 core = {k: v for k, v in d.items() if k != "agri"}
-core.update({"fx": daily, "fxm": fxm, "fxy": fxy, "agriSum": agri_sum})
+core.update({"fx": daily, "fxm": fxm, "fxy": fxy, "agriSum": agri_sum, "fresh": fresh})
 (out / "data").mkdir(parents=True, exist_ok=True)
 (out / "data" / "core.json").write_text(dump(core), encoding="utf-8")
 (out / "data" / "agri.json").write_text(dump(A), encoding="utf-8")

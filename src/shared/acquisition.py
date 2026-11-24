@@ -12,7 +12,8 @@ Bronze picks the new files up with Auto Loader (see ``ingestion.py``).
 Source availability: a source that cannot be reached after three attempts (connection or timeout error, invalid TLS
 certificate, HTTP 5xx) raises ``SourceUnavailable``. Download notebooks catch it with ``source_unavailable``: the outage
 is logged in ``quality.source_availability``, the task ends as a warning (``SOURCE_UNAVAILABLE``) and the source keeps its
-last data. TLS verification is never disabled. An HTTP 4xx (file moved or access changed), a layout change or a failed
+last data. A task with several origins (MICM: open-data files and weekly PDF notices) uses ``log_outage`` for each origin and
+ends once, so one origin being down does not hide the other. TLS verification is never disabled. An HTTP 4xx (file moved or access changed), a layout change or a failed
 validation is still an error, because it needs a fix in the project.
 """
 import hashlib, json, os, time, urllib.error, urllib.parse, urllib.request
@@ -49,8 +50,8 @@ def http_get(url, timeout=180, attempts=3):
     raise SourceUnavailable(f"{url} unreachable after {attempts} attempts: {last!r}")
 
 
-def source_unavailable(dbutils, spark, source, error):
-    """Log the outage, mark the task as 'nothing downloaded' and end it as a warning (the source keeps its last data)."""
+def log_outage(spark, source, error):
+    """Record an outage in ``quality.source_availability`` without ending the task. Logging never raises."""
     detail = str(error)[:1000]
     print(f"WARNING · source unavailable · {source}: {detail}")
     try:
@@ -59,6 +60,12 @@ def source_unavailable(dbutils, spark, source, error):
              .write.mode("append").saveAsTable("rd_economic_intelligence.quality.source_availability")
     except Exception as e:  # logging must never turn the warning into a failure
         print(f"Could not log the outage: {e!r}")
+    return detail
+
+
+def source_unavailable(dbutils, spark, source, error):
+    """Log the outage, mark the task as 'nothing downloaded' and end it as a warning (the source keeps its last data)."""
+    detail = log_outage(spark, source, error)
     dbutils.jobs.taskValues.set(key="downloaded", value=False)
     dbutils.notebook.exit(json.dumps({"status": "SOURCE_UNAVAILABLE", "source": source, "reason": detail}, ensure_ascii=False))
 

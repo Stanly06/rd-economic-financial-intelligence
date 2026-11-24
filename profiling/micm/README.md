@@ -70,6 +70,18 @@ Proposed business key: (`period_start_date`, `period_end_date`, `fuel_type`) **a
 
 The dataset is published on the national open-data portal (datos.gob.do, CKAN dataset `precios-de-los-combustibles`, organization MICM); the files themselves are served from `micm.gob.do/transparencias/datos-abiertos/precios-de-combustibles/`. The file name carries the year range, so `04_MICM_Fuel_Prices_Download` reads the current URL from the CKAN API on every run. The portal file was newer than the manually landed copy (877 vs 872 weeks).
 
+## Weekly notices (PDF), the newest weeks (added 2026-11-23)
+
+The open-data file is updated late: on 23 Nov 2026 it ended at the week 31 Oct–6 Nov, while the MICM page *Avisos semanales de precios de combustibles* already listed the notices up to 21–27 Nov (signed the Friday before the week starts). Each notice is a one-page PDF with a fixed table (parity price, taxes, margins, official price, public price, variation) and the exchange rate used.
+
+| Check | Result |
+|---|---|
+| Same price as the open-data file | Week 31 Oct–6 Nov: premium 358.10 (file 358), regular 317.50 (317), gasoil regular 270.80 (270), GLP 135.20 (135). The file shows the whole-peso part; the notice carries the centavos. |
+| Layout | Not identical every week: in some PDFs the label comes after the numbers in reading order and the characters are spaced out. The parser rebuilds each row from word coordinates (`micm_parsers.parse_notice_words`) and reads the second-to-last number of the row (the last one is the weekly variation). |
+| Cross-check | The prices read by the parser were checked against a second extractor (`pdftotext -layout`) on four notices: every price appears in the text. |
+| Mapping | 15 notice rows map to the open-data columns. The notice has one EGP row for "interconnected and not interconnected"; it feeds the `NO INTERC` column. |
+| Rule in Silver | The open-data file wins for any week it has; the notices only add later weeks. Where both exist they are compared (tolerance 1 peso); the EGP columns differ by 2 to 3 pesos in some weeks, so that check reports a warning, not a failure. |
+
 ## Open decisions and next actions
 
 - Resolve the three December 2023 repeated intervals using source documentation.
